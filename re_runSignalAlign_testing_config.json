@@ -1,0 +1,63 @@
+{
+  "signal_alignment_args": {
+    "target_regions": null,
+    "track_memory_usage": false,
+    "threshold": 0.01,
+    "event_table": null,
+    "embed": false,
+    "delete_tmp": false,
+    "output_format": "full"
+  },
+  "samples": [
+    {
+      "positions_file": "/home/ubuntu/rRNA2/reference/yeast_18S_25S_mods.positions",
+      "fast5_dirs": ["/home/ubuntu/rRNA2/Nop58_GAL/split_fast5"],
+      "bwa_reference": "/home/ubuntu/rRNA2/reference/yeast_25S_18S.fa",
+      "fofns": [],
+      "readdb": "/home/ubuntu/rRNA2/fastq/06_17_19_R941_NOP58GAL_Manny_noU.fastq.index.readdb",
+      "fw_reference": null,
+      "bw_reference": null,
+      "kmers_from_reference": false,
+      "motifs": null,
+      "name": "native_nop58_gal",
+      "probability_threshold": 0.0,
+      "number_of_kmer_assignments": 30000,
+      "alignment_file": "/home/ubuntu/rRNA2/fastq/split_06_17_19_R941_NOP58GAL_Manny_noU/split_100/split_500_NOP58GAL.100.0.bam",
+      "recursive": false,
+      "assignments_dir": null
+    },
+    {
+      "positions_file": "/home/ubuntu/rRNA2/reference/yeast_18S_25S_mods.positions",
+      "fast5_dirs": ["/home/ubuntu/rRNA2/ivt/split_fast5"],
+      "bwa_reference": "/home/ubuntu/rRNA2/reference/yeast_25S_18S.fa",
+      "fofns": [],
+      "readdb": "/home/ubuntu/rRNA2/fastq/ivt_20191014_control.fastq.index.readdb",
+      "fw_reference": null,
+      "bw_reference": null,
+      "kmers_from_reference": true,
+      "motifs": null,
+      "name": "ivt",
+      "probability_threshold": 0.0,
+      "number_of_kmer_assignments": 30000,
+      "alignment_file": "/home/ubuntu/rRNA2/fastq/split_ivt_20191014_control/split_500/ivt0.bam",
+      "recursive": false,
+      "assignments_dir": null
+    }
+  ],
+  "path_to_bin": "/home/ubuntu/signalAlign/bin",
+  "complement_hdp_model": null,
+  "template_hdp_model": null,
+  "complement_hmm_model": null,
+  "template_hmm_model": null,
+  "job_count": 96,
+  "debug": false,
+  "two_d": false,
+  "output_dir": null,
+  "constraint_trim": null,
+  "diagonal_expansion": null,
+  "traceBackDiagonals": 150,
+  "filter_reads": 7,
+  "perform_kmer_event_alignment": true,
+  "rna": true,
+  "ambig_model": "/home/ubuntu/rRNA2/reference/mod_variants.model"
+}

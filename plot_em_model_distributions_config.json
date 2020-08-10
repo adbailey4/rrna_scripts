@@ -1,0 +1,30 @@
+{
+  "save_fig_dir": "/home/ubuntu/rRNA2/sa_workspace/supervised/more_data_ivt_native/mod_only_model_comparison",
+  "reference": "//home/ubuntu/rRNA2/reference/yeast_25S_18S.fa",
+  "positions": "/home/ubuntu/rRNA2/reference/add_bases_yeast_18S_25S_mods.positions",
+  "models": [
+    "/home/ubuntu/rRNA2/sa_workspace/supervised/more_data_ivt_native/mod_only_ivt_vs_nopgal/tempFiles_trainModels/template_trained.hmm",
+    "/home/ubuntu/rRNA2/sa_workspace/supervised/more_data_ivt_native/mod_only_ivt_vs_nopgal/tempFiles_trainModels/template_hmm1.model",
+    "/home/ubuntu/rRNA2/sa_workspace/supervised/more_data_ivt_native/mod_only_ivt_vs_nopgal/tempFiles_trainModels_2/template_hmm2.model",
+    "/home/ubuntu/rRNA2/sa_workspace/supervised/more_data_ivt_native/mod_only_ivt_vs_nopgal/tempFiles_trainModels_3/template_hmm3.model",
+    "/home/ubuntu/rRNA2/sa_workspace/supervised/more_data_ivt_native/mod_only_ivt_vs_nopgal/tempFiles_trainModels_4/template_hmm4.model",
+    "/home/ubuntu/rRNA2/sa_workspace/supervised/more_data_ivt_native/mod_only_ivt_vs_nopgal/tempFiles_trainModels_5/template_hmm5.model",
+    "/home/ubuntu/rRNA2/sa_workspace/supervised/more_data_ivt_native/mod_only_ivt_vs_nopgal/tempFiles_trainModels_6/template_hmm6.model",
+    "/home/ubuntu/rRNA2/sa_workspace/supervised/more_data_ivt_native/mod_only_ivt_vs_nopgal/tempFiles_trainModels_7/template_hmm7.model",
+    "/home/ubuntu/rRNA2/sa_workspace/supervised/more_data_ivt_native/mod_only_ivt_vs_nopgal/tempFiles_trainModels_8/template_hmm8.model",
+    "/home/ubuntu/rRNA2/sa_workspace/supervised/more_data_ivt_native/mod_only_ivt_vs_nopgal/tempFiles_trainModels_9/template_hmm9.model"],
+  "assignments": [
+    null,
+    "/home/ubuntu/rRNA2/sa_workspace/supervised/more_data_ivt_native/mod_only_ivt_vs_nopgal/tempFiles_trainModels/buildAlignment1.tsv",
+    "/home/ubuntu/rRNA2/sa_workspace/supervised/more_data_ivt_native/mod_only_ivt_vs_nopgal/tempFiles_trainModels_2/buildAlignment2.tsv",
+    "/home/ubuntu/rRNA2/sa_workspace/supervised/more_data_ivt_native/mod_only_ivt_vs_nopgal/tempFiles_trainModels_3/buildAlignment3.tsv",
+    "/home/ubuntu/rRNA2/sa_workspace/supervised/more_data_ivt_native/mod_only_ivt_vs_nopgal/tempFiles_trainModels_4/buildAlignment4.tsv",
+    "/home/ubuntu/rRNA2/sa_workspace/supervised/more_data_ivt_native/mod_only_ivt_vs_nopgal/tempFiles_trainModels_5/buildAlignment5.tsv",
+    "/home/ubuntu/rRNA2/sa_workspace/supervised/more_data_ivt_native/mod_only_ivt_vs_nopgal/tempFiles_trainModels_6/buildAlignment6.tsv",
+    "/home/ubuntu/rRNA2/sa_workspace/supervised/more_data_ivt_native/mod_only_ivt_vs_nopgal/tempFiles_trainModels_7/buildAlignment7.tsv",
+    "/home/ubuntu/rRNA2/sa_workspace/supervised/more_data_ivt_native/mod_only_ivt_vs_nopgal/tempFiles_trainModels_8/buildAlignment8.tsv",
+    "/home/ubuntu/rRNA2/sa_workspace/supervised/more_data_ivt_native/mod_only_ivt_vs_nopgal/tempFiles_trainModels_9/buildAlignment9.tsv"],
+  "rna": true,
+  "save": true,
+  "scatter": false
+}

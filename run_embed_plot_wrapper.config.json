@@ -1,0 +1,91 @@
+{
+  "save_fig_dir": "/home/ubuntu/rRNA2/sa_workspace/supervised/more_data_ivt_native/mod_only_ivt_vs_nopgal/gifs",
+  "positions": "/home/ubuntu/rRNA2/reference/ivt_yeast_18S_25S_mods.positions",
+  "ambig_model": "/home/ubuntu/rRNA2/reference/mod_variants.model",
+  "rna": true,
+  "num_threads": 4,
+  "debug": false,
+  "mod_only": true,
+  "force_event": false,
+  "force_pos_hist": false,
+  "reference": "/home/ubuntu/rRNA2/reference/yeast_25S_18S.fa",
+  "alphabet": "ACGTabcdefghijklm",
+  "min_prob": 0.3,
+  "iterations": [
+    {
+      "name": "iteration1",
+      "hmm_model": "/home/ubuntu/rRNA2/sa_workspace/supervised/more_data_ivt_native/mod_only_ivt_vs_nopgal/tempFiles_trainModels/template_hmm1.model",
+      "hdp_model": null,
+      "sa_output_dirs": [
+        "/home/ubuntu/rRNA2/sa_workspace/supervised/more_data_ivt_native/mod_only_ivt_vs_nopgal/tempFiles_trainModels/native_nop58_gal"
+      ]
+    },
+    {
+      "name": "iteration2",
+      "hmm_model": "/home/ubuntu/rRNA2/sa_workspace/supervised/more_data_ivt_native/mod_only_ivt_vs_nopgal/tempFiles_trainModels_2/template_hmm2.model",
+      "hdp_model": null,
+      "sa_output_dirs": [
+        "/home/ubuntu/rRNA2/sa_workspace/supervised/more_data_ivt_native/mod_only_ivt_vs_nopgal/tempFiles_trainModels_2/native_nop58_gal"
+      ]
+    },
+    {
+      "name": "iteration3",
+      "hmm_model": "/home/ubuntu/rRNA2/sa_workspace/supervised/more_data_ivt_native/mod_only_ivt_vs_nopgal/tempFiles_trainModels_3/template_hmm3.model",
+      "hdp_model": null,
+      "sa_output_dirs": [
+        "/home/ubuntu/rRNA2/sa_workspace/supervised/more_data_ivt_native/mod_only_ivt_vs_nopgal/tempFiles_trainModels_3/native_nop58_gal"
+      ]
+    },
+    {
+      "name": "iteration4",
+      "hmm_model": "/home/ubuntu/rRNA2/sa_workspace/supervised/more_data_ivt_native/mod_only_ivt_vs_nopgal/tempFiles_trainModels_4/template_hmm4.model",
+      "hdp_model": null,
+      "sa_output_dirs": [
+        "/home/ubuntu/rRNA2/sa_workspace/supervised/more_data_ivt_native/mod_only_ivt_vs_nopgal/tempFiles_trainModels_4/native_nop58_gal"
+      ]
+    },    {
+      "name": "iteration5",
+      "hmm_model": "/home/ubuntu/rRNA2/sa_workspace/supervised/more_data_ivt_native/mod_only_ivt_vs_nopgal/tempFiles_trainModels_5/template_hmm5.model",
+      "hdp_model": null,
+      "sa_output_dirs": [
+        "/home/ubuntu/rRNA2/sa_workspace/supervised/more_data_ivt_native/mod_only_ivt_vs_nopgal/tempFiles_trainModels_5/native_nop58_gal"
+      ]
+    },    {
+      "name": "iteration6",
+      "hmm_model": "/home/ubuntu/rRNA2/sa_workspace/supervised/more_data_ivt_native/mod_only_ivt_vs_nopgal/tempFiles_trainModels_6/template_hmm6.model",
+      "hdp_model": null,
+      "sa_output_dirs": [
+        "/home/ubuntu/rRNA2/sa_workspace/supervised/more_data_ivt_native/mod_only_ivt_vs_nopgal/tempFiles_trainModels_6/native_nop58_gal"
+      ]
+    },    {
+      "name": "iteration7",
+      "hmm_model": "/home/ubuntu/rRNA2/sa_workspace/supervised/more_data_ivt_native/mod_only_ivt_vs_nopgal/tempFiles_trainModels_7/template_hmm7.model",
+      "hdp_model": null,
+      "sa_output_dirs": [
+        "/home/ubuntu/rRNA2/sa_workspace/supervised/more_data_ivt_native/mod_only_ivt_vs_nopgal/tempFiles_trainModels_7/native_nop58_gal"
+      ]
+    },    {
+      "name": "iteration8",
+      "hmm_model": "/home/ubuntu/rRNA2/sa_workspace/supervised/more_data_ivt_native/mod_only_ivt_vs_nopgal/tempFiles_trainModels_8/template_hmm8.model",
+      "hdp_model": null,
+      "sa_output_dirs": [
+        "/home/ubuntu/rRNA2/sa_workspace/supervised/more_data_ivt_native/mod_only_ivt_vs_nopgal/tempFiles_trainModels_8/native_nop58_gal"
+      ]
+    },    {
+      "name": "iteration9",
+      "hmm_model": "/home/ubuntu/rRNA2/sa_workspace/supervised/more_data_ivt_native/mod_only_ivt_vs_nopgal/tempFiles_trainModels_9/template_hmm9.model",
+      "hdp_model": null,
+      "sa_output_dirs": [
+        "/home/ubuntu/rRNA2/sa_workspace/supervised/more_data_ivt_native/mod_only_ivt_vs_nopgal/tempFiles_trainModels_9/native_nop58_gal"
+      ]
+    },
+    {
+      "name": "iteration10",
+      "hmm_model": "/home/ubuntu/rRNA2/sa_workspace/supervised/more_data_ivt_native/mod_only_ivt_vs_nopgal/tempFiles_trainModels_9/template_hmm9.model",
+      "hdp_model": "/home/ubuntu/rRNA2/sa_workspace/supervised/more_data_ivt_native/mod_only_ivt_vs_nopgal/tempFiles_trainModels_10/template.10singleLevelAll16SrRNA.nhdp",
+      "sa_output_dirs": [
+        "/home/ubuntu/rRNA2/sa_workspace/supervised/more_data_ivt_native/mod_only_ivt_vs_nopgal/tempFiles_trainModels_10/native_nop58_gal"
+      ]
+    }
+  ]
+}

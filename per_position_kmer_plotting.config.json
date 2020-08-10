@@ -1,0 +1,34 @@
+{
+  "save_fig_dir": "/Users/andrewbailey/CLionProjects/personal/projects/ares_rRNA/plotting/output_path",
+  "positions": "/Users/andrewbailey/CLionProjects/embed_fast5/test_event/puc19_pos.positions",
+  "rna": false,
+  "num_threads": 2,
+  "mod_only": true,
+  "debug": true,
+  "iterations": [
+    {
+      "name": "iteration1",
+      "hmm_model": "/Users/andrewbailey/CLionProjects/signalAlign/models/testModelR9_5mer_acgt_template.model",
+      "hdp_model": null,
+      "kmer_hist_dir": "/Users/andrewbailey/CLionProjects/embed_fast5/test_event"
+    },
+    {
+      "name": "iteration2",
+      "hmm_model": "/Users/andrewbailey/CLionProjects/signalAlign/models/testModelR9_5mer_acgt_template.model",
+      "hdp_model": null,
+      "kmer_hist_dir": "/Users/andrewbailey/CLionProjects/embed_fast5/test_event"
+    },
+    {
+      "name": "iteration3",
+      "hmm_model": "/Users/andrewbailey/CLionProjects/signalAlign/models/testModelR9_5mer_acgt_template.model",
+      "hdp_model": null,
+      "kmer_hist_dir": "/Users/andrewbailey/CLionProjects/embed_fast5/test_event"
+    },
+    {
+      "name": "iteration4",
+      "hmm_model": "/Users/andrewbailey/CLionProjects/signalAlign/models/testModelR9_5mer_acgt_template.model",
+      "hdp_model": null,
+      "kmer_hist_dir": "/Users/andrewbailey/CLionProjects/embed_fast5/test_event"
+    }
+  ]
+}
