@@ -45,7 +45,7 @@ def re_run_signalalign(directory, output_dir, base_model, variants, rna):
     created_models_dir = os.path.join(output_dir, "created_models")
     if not os.path.exists(created_models_dir):
         os.mkdir(created_models_dir)
-    execute = "runSignalAlign run --config {}"
+    execute = "runSignalAlign.py run --config {}"
     embed_main_execute = "embed_main sa2bed -d {}/tempFiles_alignment/{}/ -a {} -o {}/{}.bed -t {} -c {} --overwrite"
     if rna:
         embed_main_execute += " --rna"

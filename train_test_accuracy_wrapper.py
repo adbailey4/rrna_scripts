@@ -117,7 +117,7 @@ def main():
     # Train models
     if config_dict.options["train"]:
         print("TRAINING")
-        execute = "trainModels run --config {}"
+        execute = "trainModels.py run --config {}"
         assert os.path.exists(config_dict.train_model), "train_model path does not exist {}".format(config_dict.train_model)
         train_model_config = load_json(config_dict.train_model)
         assert training_dir == train_model_config["output_dir"], \
@@ -148,7 +148,7 @@ def main():
         re_run_plot_variant_accuracy(testing_accuracy_dir, testing_dir, positions_files, names, suffixes, threshold=0.5)
         # copy into one directory
         print("COPYING ACCURACY DATA")
-        for i in range(1, len(list_dir(training_model_dir))):
+        for i in range(1, len(list_dir(training_model_dir))+1):
             shutil.copy2(os.path.join(testing_accuracy_dir,
                                       "template_hmm{}/per_position/per_position_data_0.5.csv".format(i)),
                          os.path.join(testing_accuracy_csvs_dir, "{}_per_position_data_0.5.csv".format(i)))

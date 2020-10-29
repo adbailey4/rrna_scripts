@@ -64,7 +64,7 @@ def run_embed_plot_wrapper(config):
         if config.rna:
             split_by_pos += " --rna"
         kmer_distributions = "embed_main kmer_distributions --reference {} --ambig_model {} " \
-                             "--positions_file {} --min_prob".format(config.reference, config.ambig_model,
+                             "--positions_file {} --min_prob {}".format(config.reference, config.ambig_model,
                                                                      config.positions, config.min_prob)
         for alignment_dir in data["sa_output_dirs"]:
             split_by_pos += " --alignment_files {}".format(alignment_dir)
