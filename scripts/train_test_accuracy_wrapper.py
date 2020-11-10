@@ -166,7 +166,7 @@ def main():
         positions_files = config_dict.plot_accuracies.train["positions_files"]
         names = config_dict.plot_accuracies.train["names"]
         suffixes = ["variant_calls/{}.csv".format(name) for name in names]
-        re_run_plot_variant_accuracy(training_accuracy_dir, training_dir, positions_files, names, suffixes, threshold=0.5)
+        re_run_plot_variant_accuracy(training_accuracy_dir, testing_dir, positions_files, names, suffixes, threshold=0.5)
         # copy into one directory
         print("COPYING ACCURACY DATA:TRAIN", flush=True)
         for i in range(1, len(list_dir(training_model_dir))+1):
