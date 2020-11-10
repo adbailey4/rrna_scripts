@@ -116,7 +116,7 @@ def main():
 
     # Train models
     if config_dict.options["train"]:
-        print("TRAINING")
+        print("TRAINING", flush=True)
         execute = "trainModels.py run --config {}"
         assert os.path.exists(config_dict.train_model), "train_model path does not exist {}".format(config_dict.train_model)
         train_model_config = load_json(config_dict.train_model)
@@ -124,14 +124,14 @@ def main():
             "train_model path is not same as output_dir: {} != {}".format(training_dir, train_model_config["output_dir"])
         check_call(execute.format(config_dict.train_model).split())
         # copy training models
-        print("COPYING MODELS")
+        print("COPYING MODELS", flush=True)
         shutil.copy2(os.path.join(training_dir, "tempFiles_trainModels/template_hmm1.model"), training_model_dir)
         for i in range(2, train_model_config["training"]["em_iterations"]+1):
             shutil.copy2(os.path.join(training_dir,
                                       "tempFiles_trainModels_{}/template_hmm{}.model".format(i, i)),
                          training_model_dir)
     if config_dict.options["test"]:
-        print("TESTING")
+        print("TESTING", flush=True)
         # test model
         re_run_signalalign(training_model_dir,
                            testing_dir,
@@ -140,21 +140,21 @@ def main():
                            config_dict.test_model["rna"])
 
     if config_dict.options["plot_accuracies"]:
-        print("PLOTTING ACCURACIES")
+        print("PLOTTING ACCURACIES", flush=True)
         # plot accuracies
         positions_files = config_dict.plot_accuracies["positions_files"]
         names = config_dict.plot_accuracies["names"]
         suffixes = ["variant_calls/{}.csv".format(name) for name in names]
         re_run_plot_variant_accuracy(testing_accuracy_dir, testing_dir, positions_files, names, suffixes, threshold=0.5)
         # copy into one directory
-        print("COPYING ACCURACY DATA")
+        print("COPYING ACCURACY DATA", flush=True)
         for i in range(1, len(list_dir(training_model_dir))+1):
             shutil.copy2(os.path.join(testing_accuracy_dir,
                                       "template_hmm{}/per_position/per_position_data_0.5.csv".format(i)),
                          os.path.join(testing_accuracy_csvs_dir, "{}_per_position_data_0.5.csv".format(i)))
 
     if config_dict.options["plot_distributions"]:
-        print("PLOTTING DISTRIBUTIONS")
+        print("PLOTTING DISTRIBUTIONS", flush=True)
         model_path = config_dict.plot_distributions
         assert(os.path.exists(training_dir))
         assert(os.path.exists(model_path))
