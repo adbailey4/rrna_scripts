@@ -1,0 +1,30 @@
+{
+  "base_directory": "/data/output/",
+  "train_model": "/data/train_config.json",
+  "test_model": {
+    "base_model": "/data/run_config.json",
+    "variants": "BDEFHIJKLMOPQR",
+    "rna": true
+  },
+  "plot_accuracies": {
+    "train": {
+      "positions_files":
+      ["/data/reference/native_yeast_18S_25S_mods_guess.positions",
+        "/data/reference/ivt_yeast_18S_25S_mods.positions"],
+      "names": ["native_nop58_gal", "canonical_ivt"]
+    },
+    "test": {
+      "positions_files":
+      ["/data/reference/native_yeast_18S_25S_mods_guess.positions",
+        "/data/reference/ivt_yeast_18S_25S_mods.positions"],
+      "names": ["native_nop58_gal", "canonical_ivt"]
+    }
+  },
+  "plot_distributions": "/data/run_embed_plot_wrapper.json",
+  "options": {
+    "train": true,
+    "test": true,
+    "plot_accuracies": true,
+    "plot_distributions": true
+  }
+}

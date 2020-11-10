@@ -83,7 +83,9 @@ def main():
     training_model_dir = os.path.join(config_dict.base_directory, "training_models")
     testing_dir = os.path.join(config_dict.base_directory, "testing")
     testing_accuracy_dir = os.path.join(config_dict.base_directory, "testing_accuracy")
+    training_accuracy_dir = os.path.join(config_dict.base_directory, "training_accuracy")
     testing_accuracy_csvs_dir = os.path.join(config_dict.base_directory, "testing_accuracy_csvs")
+    training_accuracy_csvs_dir = os.path.join(config_dict.base_directory, "training_accuracy_csvs")
     training_distributions_dir = os.path.join(config_dict.base_directory, "training_distributions")
 
     if config_dict.options["train"]:
@@ -108,6 +110,12 @@ def main():
             "Directory should not exist: {}. Check base_directory".format(testing_accuracy_csvs_dir)
         os.mkdir(testing_accuracy_dir)
         os.mkdir(testing_accuracy_csvs_dir)
+        assert not os.path.exists(training_accuracy_dir), \
+            "Directory should not exist: {}. Check base_directory".format(training_accuracy_dir)
+        assert not os.path.exists(training_accuracy_csvs_dir), \
+            "Directory should not exist: {}. Check base_directory".format(training_accuracy_csvs_dir)
+        os.mkdir(training_accuracy_dir)
+        os.mkdir(training_accuracy_csvs_dir)
 
     if config_dict.options["plot_distributions"]:
         assert not os.path.exists(training_distributions_dir), \
@@ -140,18 +148,31 @@ def main():
                            config_dict.test_model["rna"])
 
     if config_dict.options["plot_accuracies"]:
-        print("PLOTTING ACCURACIES", flush=True)
+        print("PLOTTING ACCURACIES:TEST", flush=True)
         # plot accuracies
-        positions_files = config_dict.plot_accuracies["positions_files"]
-        names = config_dict.plot_accuracies["names"]
+        positions_files = config_dict.plot_accuracies.test["positions_files"]
+        names = config_dict.plot_accuracies.test["names"]
         suffixes = ["variant_calls/{}.csv".format(name) for name in names]
         re_run_plot_variant_accuracy(testing_accuracy_dir, testing_dir, positions_files, names, suffixes, threshold=0.5)
         # copy into one directory
-        print("COPYING ACCURACY DATA", flush=True)
+        print("COPYING ACCURACY DATA:TEST", flush=True)
         for i in range(1, len(list_dir(training_model_dir))+1):
             shutil.copy2(os.path.join(testing_accuracy_dir,
                                       "template_hmm{}/per_position/per_position_data_0.5.csv".format(i)),
                          os.path.join(testing_accuracy_csvs_dir, "{}_per_position_data_0.5.csv".format(i)))
+
+        print("PLOTTING ACCURACIES:TRAIN", flush=True)
+        # plot accuracies
+        positions_files = config_dict.plot_accuracies.train["positions_files"]
+        names = config_dict.plot_accuracies.train["names"]
+        suffixes = ["variant_calls/{}.csv".format(name) for name in names]
+        re_run_plot_variant_accuracy(training_accuracy_dir, training_dir, positions_files, names, suffixes, threshold=0.5)
+        # copy into one directory
+        print("COPYING ACCURACY DATA:TRAIN", flush=True)
+        for i in range(1, len(list_dir(training_model_dir))+1):
+            shutil.copy2(os.path.join(training_accuracy_dir,
+                                      "template_hmm{}/per_position/per_position_data_0.5.csv".format(i)),
+                         os.path.join(training_accuracy_csvs_dir, "{}_per_position_data_0.5.csv".format(i)))
 
     if config_dict.options["plot_distributions"]:
         print("PLOTTING DISTRIBUTIONS", flush=True)
