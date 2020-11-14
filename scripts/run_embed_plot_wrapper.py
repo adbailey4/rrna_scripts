@@ -86,7 +86,7 @@ def run_embed_plot_wrapper(config):
         kmer_distributions += " --output {}".format(pos_histograms)
         if not os.path.isdir(pos_histograms):
             os.mkdir(pos_histograms)
-            print(pos_histograms)
+            print(kmer_distributions)
             check_call(kmer_distributions.split())
         elif config.force_pos_hist:
             print(kmer_distributions)
