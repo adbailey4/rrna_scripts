@@ -9,7 +9,7 @@
 ########################################################################
 import unittest
 import os
-
+from rrna_analysis.multiple_model_accuracy import get_kmer_mean_delta
 # from py3helpers.utils import merge_dicts, captured_output
 # from signalalign.alignedsignal import *
 # from signalalign.signalAlignment import SignalAlignment, create_signalAlignment_args

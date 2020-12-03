@@ -3,3 +3,4 @@ build/
 dist/
 .pytest_cache
 __pycache__
+run_pip_install.sh
