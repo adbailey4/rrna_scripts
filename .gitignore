@@ -1,3 +1,5 @@
 src/rrna_scripts.egg-info/
 build/
 dist/
+.pytest_cache
+__pycache__

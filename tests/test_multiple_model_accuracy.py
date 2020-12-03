@@ -22,7 +22,7 @@ class MultipleModelAccuracy(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         super(MultipleModelAccuracy, cls).setUpClass()
-        cls.HOME = '/'.join(os.path.abspath(__file__).split("/")[:-4])
+        cls.HOME = '/'.join(os.path.abspath(__file__).split("/")[:-2])
         cls.test_file = os.path.join(cls.HOME, "src/rrna_analysis/__init__.py")
 
     def test_test(self):
