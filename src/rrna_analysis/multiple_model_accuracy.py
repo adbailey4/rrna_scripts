@@ -1,3 +1,25 @@
+#!/usr/bin/env python
+"""class for plotting accuracy of multiple model training runs"""
+########################################################################
+# File: multiple_model_accuracy.py
+#  executable: multiple_model_accuracy.py
+#
+# Author: Andrew Bailey
+# History: Created 12/03/20
+########################################################################
+
+import re
+import os
+from scipy.stats import norm, entropy
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from itertools import combinations
+from collections import defaultdict
+
+from py3helpers.utils import list_dir
+from signalalign.hiddenMarkovModel import HmmModel
+from rrna_analysis.kmer_pos_mapping import KmerPosMapping
 
 
 def get_first_int(string):
@@ -33,205 +55,196 @@ def get_kmer_mean_delta(model, kmer1, kmer2):
 #       dtype='object')
 
 
-class MultipleModelAccuracy(object):
-    def __init__(self, reference, positions, mods_csv):
-        assert os.path.exists(reference), f"reference path does not exist:{reference}"
-        assert os.path.exists(positions), f"positions path does not exist:{positions}"
-        assert os.path.exists(mods_csv), f"mods_csv path does not exist:{mods_csv}"
-        self.reference = reference
-        self.positions = positions
-        self.mods_csv = mods_csv
-        self.mod_data = self.read_in_mod_data(self.mods_csv)
-        self.subset_mod_data = self.mod_data[["contig", "reference_index", "percent"]]
+def preprocess_accuracy_csv(path, mod_data):
+    assert (os.path.exists(path))
+    accuracy_csv = pd.read_csv(path).sort_values(by=['contig', 'reference_index'])
 
-        self.covered_bases_dict = self.get_covered_bases_dict(self.reference, self.positions)
+    accuracy_csv['delta1'] = accuracy_csv.reference_index.diff().shift(-1)
+    accuracy_csv['delta2'] = np.abs(accuracy_csv.reference_index.diff().shift(0))
+    accuracy_csv['delta'] = accuracy_csv[["delta1", "delta2"]].min(axis=1)
+    accuracy_csv["in_2prime"] = (((accuracy_csv.variants.shift().isin(["Aa", "Cb", "Gc", "Td", "Tdm"]) &
+                                   (accuracy_csv.delta2 <= 5)) |
+                                  (accuracy_csv.variants.shift(-1).isin(["Aa", "Cb", "Gc", "Td", "Tdm"]) &
+                                   (accuracy_csv.delta1 <= 5))) & (
+                                     ~accuracy_csv.variants.isin(["Aa", "Cb", "Gc", "Td"])))
+    accuracy_csv["in_pseudo"] = (((accuracy_csv.variants.shift().isin(["Tl"]) &
+                                   (accuracy_csv.delta2 <= 5)) |
+                                  (accuracy_csv.variants.shift(-1).isin(["Tl", "Tdm"]) &
+                                   (accuracy_csv.delta1 <= 5))) &
+                                 (~accuracy_csv.variants.isin(["Tl"])))
+    accuracy_csv["in_unknown"] = (accuracy_csv["in_pseudo"] | accuracy_csv["in_2prime"])
+    accuracy_csv = pd.merge(accuracy_csv, mod_data, on=["contig", "reference_index"])
+    return accuracy_csv
 
-    @staticmethod
-    def read_in_mod_data(mods_csv):
-        mods_df = pd.read_csv(mods_csv)
-        mods_df["reference_index"] = mods_df["pos"] - 1
-        return mods_df
 
-    @staticmethod
-    def get_covered_bases_dict(reference, positions, kmer_length=5, rna=True):
-        covered_bases_dict = defaultdict(defaultdict)
-        covered_bases = get_covered_bases(reference, positions, kmer_length=kmer_length, rna=rna)
-        for ref, positions, variant, kmers in covered_bases:
-            for pos in positions:
-                covered_bases_dict[ref][pos] = kmers
-        return covered_bases_dict
+def csv_model_mapping(csv_dir, model_dir):
+    """Map accuracy csv file with correct model
+    :param csv_dir: path to accuracy csv dir
+    :param model_dir: path to model dir
+    """
+    csvs = list_dir(csv_dir, "csv")
+    models = list_dir(model_dir, "model")
+    assert len(csvs) == len(models), f"len(csvs) != len(models): {len(csvs)} != {len(models)}"
+    csv_model_map = defaultdict(list)
+    for c in csvs:
+        csv_model_map[get_first_int(os.path.basename(c))].append(c)
+    for m in models:
+        csv_model_map[get_first_int(os.path.basename(m))].append(m)
+    return csv_model_map
 
-    def preprocess_accuracy_csv(self, path):
-        assert (os.path.exists(path))
-        accuracy_csv = pd.read_csv(path).sort_values(by=['contig', 'reference_index'])
 
-        accuracy_csv['delta1'] = accuracy_csv.reference_index.diff().shift(-1)
-        accuracy_csv['delta2'] = np.abs(accuracy_csv.reference_index.diff().shift(0))
-        accuracy_csv['delta'] = accuracy_csv[["delta1", "delta2"]].min(axis=1)
-        accuracy_csv["in_2prime"] = (((accuracy_csv.variants.shift().isin(["Aa", "Cb", "Gc", "Td", "Tdm"]) &
-                                       (accuracy_csv.delta2 <= 5)) |
-                                      (accuracy_csv.variants.shift(-1).isin(["Aa", "Cb", "Gc", "Td", "Tdm"]) &
-                                       (accuracy_csv.delta1 <= 5))) & (
-                                         ~accuracy_csv.variants.isin(["Aa", "Cb", "Gc", "Td"])))
-        accuracy_csv["in_pseudo"] = (((accuracy_csv.variants.shift().isin(["Tl"]) &
-                                       (accuracy_csv.delta2 <= 5)) |
-                                      (accuracy_csv.variants.shift(-1).isin(["Tl", "Tdm"]) &
-                                       (accuracy_csv.delta1 <= 5))) &
-                                     (~accuracy_csv.variants.isin(["Tl"])))
-        accuracy_csv["in_unknown"] = (accuracy_csv["in_pseudo"] | accuracy_csv["in_2prime"])
-        accuracy_csv = pd.merge(accuracy_csv, self.subset_mod_data, on=["contig", "reference_index"])
-        return accuracy_csv
+def plot_accuracy_vs_delta_and_accuracy_over_time(kmer_pos_mapping, directory, model_dir, model_n, high_percent=100,
+                                                  low_percent=0, low_delta=0, high_delta=np.inf, key="accuracy",
+                                                  max_delta=False, aot=True, avd=True):
+    """Plot accuracy vs model delta from canonical"""
+    csv_model_map = csv_model_mapping(directory, model_dir)
 
-    def plot_accuracy_vs_delta_and_accuracy_over_time(self, directory, model_dir, model_n, high_percent=100,
-                                                      low_percent=0, low_delta=0, high_delta=np.inf, key="accuracy",
-                                                      max_delta=False, aot=True, avd=True):
-        """Plot accuracy vs model delta from canonical"""
-        csvs = list_dir(directory, "csv")
-        models = list_dir(model_dir, "model")
-        assert len(csvs) == len(models), f"len(csvs) != len(models): {len(csvs)} != {len(models)}"
-
-        plot_me2 = defaultdict(list)
-        plot_me = defaultdict(defaultdict)
-
-        for i, (x, model_path) in enumerate(zip(csvs, models)):
-            assert (os.path.exists(x))
-            round_data = self.preprocess_accuracy_csv(x)
-            round_number = get_first_int(os.path.basename(x))
-            #     print(round_number)
-            if i + 1 == model_n:
-                model = HmmModel(model_path, rna=True)
-            for group, data in round_data.groupby(["contig", "reference_index", "strand"]):
-                mod = "_".join([str(x) for x in group])
-                if (low_percent <= data["percent"].iloc[0] <= high_percent and
-                        low_delta <= data["delta"].iloc[0] <= high_delta):
-                    plot_me[mod][round_number] = data[key].iloc[0]
-                    # other plot
-                    if i + 1 == model_n:
-                        kmer_pairs = self.covered_bases_dict[group[0]][group[1]]
-                        deltas = []
-                        for kmer_pair in kmer_pairs:
-                            kmer_pair = list(kmer_pair)
-                            if len(kmer_pair) > 2:
-                                subset_kmer_deltas = []
-                                subset_kmer_pairs = list(combinations(kmer_pair, 2))
-                                for k1, k2 in subset_kmer_pairs:
-                                    subset_kmer_deltas.append(get_kmer_mean_delta(model, k1, k2))
-                                deltas.append(max(subset_kmer_deltas))
-                            else:
-                                deltas.append(get_kmer_mean_delta(model, kmer_pair[0], kmer_pair[1]))
-                        if max_delta:
-                            delta = max(deltas)
+    plot_me2 = defaultdict(list)
+    plot_me = defaultdict(defaultdict)
+    model = None
+    for i, (x, model_path) in csv_model_map.items():
+        assert (os.path.exists(x))
+        round_data = preprocess_accuracy_csv(x, kmer_pos_mapping.subset_mod_data)
+        round_number = get_first_int(os.path.basename(x))
+        #     print(round_number)
+        if i + 1 == model_n:
+            model = HmmModel(model_path, rna=True)
+        for group, data in round_data.groupby(["contig", "reference_index", "strand"]):
+            mod = "_".join([str(x) for x in group])
+            if (low_percent <= data["percent"].iloc[0] <= high_percent and
+                    low_delta <= data["delta"].iloc[0] <= high_delta):
+                plot_me[mod][round_number] = data[key].iloc[0]
+                # other plot
+                if i + 1 == model_n:
+                    kmer_pairs = kmer_pos_mapping.get_kmers_covering_mod(contig=str(group[0]),
+                                                                         strand=str(group[2]),
+                                                                         position=int(group[1]))
+                    deltas = []
+                    assert kmer_pairs, f"missing contig, strand, position: contig, strand, position: " \
+                                       f"{group[0]}, {group[2]}, {group[1]}"
+                    for kmer_pair in kmer_pairs:
+                        kmer_pair = list(kmer_pair)
+                        if len(kmer_pair) > 2:
+                            subset_kmer_deltas = []
+                            subset_kmer_pairs = list(combinations(kmer_pair, 2))
+                            for k1, k2 in subset_kmer_pairs:
+                                subset_kmer_deltas.append(get_kmer_mean_delta(model, k1, k2))
+                            deltas.append(max(subset_kmer_deltas))
                         else:
-                            delta = sum(deltas)
-                        plot_me2[mod] = [data[key].iloc[0], delta]
-        if aot:
-            plt, keys = self.plot_fig_1(plot_me, key)
-        if avd:
-            plt, keys = self.plot_me_fig2(plot_me2, key, max_delta)
-        return plt, keys
-
-    @staticmethod
-    def plot_fig_1(plot_me, key):
-        #     fig 1
-        fig = plt.figure(figsize=[10, 15])
-        panel1 = plt.axes([0.1, 0.5, .6, .4])
-        panel1.set_title('{} over training runs'.format(key))
-        panel1.set_xlabel('Training Round')
-        panel1.set_ylabel(key)
-
-        lines = []
-        for label, data_dict in plot_me.items():
-            sorted_items = sorted(data_dict.items())
-            l, = panel1.plot([x[0] for x in sorted_items], [x[1] for x in sorted_items], label=label)
-            lines.append(l)
-
-        panel1.legend(loc='upper center', bbox_to_anchor=(0.5, -0.08),
-                      fancybox=True, shadow=True, ncol=4)
-        annot = panel1.annotate("", xy=(0, 0), xytext=(20, 20), textcoords="offset points",
-                                bbox=dict(boxstyle="round", fc="w"),
-                                arrowprops=dict(arrowstyle="->"))
-        annot.set_visible(False)
-
-        def update_annot(line, idx):
-            posx, posy = [line.get_xdata()[idx], line.get_ydata()[idx]]
-            annot.xy = (posx, posy)
-            text = f'{line.get_label()}: {posx:.2f}-{posy:.2f}'
-            annot.set_text(text)
-            # annot.get_bbox_patch().set_facecolor(cmap(norm(c[ind["ind"][0]])))
-            annot.get_bbox_patch().set_alpha(0.4)
-
-        def hover(event):
-            vis = annot.get_visible()
-            if event.inaxes == panel1:
-                for line in lines:
-                    cont, ind = line.contains(event)
-                    if cont:
-                        update_annot(line, ind['ind'][0])
-                        annot.set_visible(True)
-                        fig.canvas.draw_idle()
+                            deltas.append(get_kmer_mean_delta(model, kmer_pair[0], kmer_pair[1]))
+                    if max_delta:
+                        delta = max(deltas)
                     else:
-                        if vis:
-                            annot.set_visible(False)
-                            fig.canvas.draw_idle()
+                        delta = sum(deltas)
+                    plot_me2[mod] = [data[key].iloc[0], delta]
+    if aot:
+        plt, keys = plot_fig_1(plot_me, key)
+    if avd:
+        plt, keys = plot_me_fig2(plot_me2, key, max_delta)
+    return plt, keys
 
-        fig.canvas.mpl_connect("motion_notify_event", hover)
-        return plt, list(plot_me.keys())
 
-    @staticmethod
-    def plot_me_fig2(plot_me, key, max_delta):
-        fig = plt.figure(figsize=[10, 15])
-        panel1 = plt.axes([0.1, 0.5, .6, .4])
-        if max_delta:
-            panel1.set_title(f'{key} vs Max delta between modified and canonical')
-            panel1.set_xlabel("Max delta between modified and canonical")
-        else:
-            panel1.set_title(f'{key} vs Sum deltas between modified and canonical')
-            panel1.set_xlabel("Sum deltas between modified and canonical")
+def plot_fig_1(plot_me, key):
+    #     fig 1
+    fig = plt.figure(figsize=[10, 15])
+    panel1 = plt.axes([0.1, 0.5, .6, .4])
+    panel1.set_title('{} over training runs'.format(key))
+    panel1.set_xlabel('Training Round')
+    panel1.set_ylabel(key)
 
-        panel1.set_ylabel(key)
+    lines = []
+    for label, data_dict in plot_me.items():
+        sorted_items = sorted(data_dict.items())
+        l, = panel1.plot([x[0] for x in sorted_items], [x[1] for x in sorted_items], label=label)
+        lines.append(l)
 
-        lines = []
-        accuracy_values = []
-        delta_values = []
-        for label, (acc, delta) in plot_me.items():
-            accuracy_values.append(acc)
-            delta_values.append(delta)
-            l, = panel1.plot(delta, acc, 'o', label=label)
-            lines.append(l)
+    panel1.legend(loc='upper center', bbox_to_anchor=(0.5, -0.08),
+                  fancybox=True, shadow=True, ncol=4)
+    annot = panel1.annotate("", xy=(0, 0), xytext=(20, 20), textcoords="offset points",
+                            bbox=dict(boxstyle="round", fc="w"),
+                            arrowprops=dict(arrowstyle="->"))
+    annot.set_visible(False)
 
-        m, b = np.polyfit(delta_values, accuracy_values, 1)
-        panel1.plot(delta_values, m * np.array(delta_values) + b,
-                    label=f"slope={round(m, 4)} \n intercept={round(b, 4)}")
+    def update_annot(line, idx):
+        posx, posy = [line.get_xdata()[idx], line.get_ydata()[idx]]
+        annot.xy = (posx, posy)
+        text = f'{line.get_label()}: {posx:.2f}-{posy:.2f}'
+        annot.set_text(text)
+        # annot.get_bbox_patch().set_facecolor(cmap(norm(c[ind["ind"][0]])))
+        annot.get_bbox_patch().set_alpha(0.4)
 
-        panel1.legend(loc='upper center', bbox_to_anchor=(0.5, -0.08),
-                      fancybox=True, shadow=True, ncol=4)
-        annot = panel1.annotate("", xy=(0, 0), xytext=(20, 20), textcoords="offset points",
-                                bbox=dict(boxstyle="round", fc="w"),
-                                arrowprops=dict(arrowstyle="->"))
-        annot.set_visible(False)
-
-        def update_annot(line, idx):
-            posx, posy = [line.get_xdata()[idx], line.get_ydata()[idx]]
-            annot.xy = (posx, posy)
-            text = f'{line.get_label()}: {posx:.2f}-{posy:.2f}'
-            annot.set_text(text)
-            # annot.get_bbox_patch().set_facecolor(cmap(norm(c[ind["ind"][0]])))
-            annot.get_bbox_patch().set_alpha(0.4)
-
-        def hover(event):
-            vis = annot.get_visible()
-            if event.inaxes == panel1:
-                for line in lines:
-                    cont, ind = line.contains(event)
-                    if cont:
-                        update_annot(line, ind['ind'][0])
-                        annot.set_visible(True)
+    def hover(event):
+        vis = annot.get_visible()
+        if event.inaxes == panel1:
+            for line in lines:
+                cont, ind = line.contains(event)
+                if cont:
+                    update_annot(line, ind['ind'][0])
+                    annot.set_visible(True)
+                    fig.canvas.draw_idle()
+                else:
+                    if vis:
+                        annot.set_visible(False)
                         fig.canvas.draw_idle()
-                    else:
-                        if vis:
-                            annot.set_visible(False)
-                            fig.canvas.draw_idle()
 
-        fig.canvas.mpl_connect("motion_notify_event", hover)
+    fig.canvas.mpl_connect("motion_notify_event", hover)
+    return plt, list(plot_me.keys())
 
-        return plt, list(plot_me.keys())
+
+def plot_me_fig2(plot_me, key, max_delta):
+    fig = plt.figure(figsize=[10, 15])
+    panel1 = plt.axes([0.1, 0.5, .6, .4])
+    if max_delta:
+        panel1.set_title(f'{key} vs Max delta between modified and canonical')
+        panel1.set_xlabel("Max delta between modified and canonical")
+    else:
+        panel1.set_title(f'{key} vs Sum deltas between modified and canonical')
+        panel1.set_xlabel("Sum deltas between modified and canonical")
+
+    panel1.set_ylabel(key)
+
+    lines = []
+    accuracy_values = []
+    delta_values = []
+    for label, (acc, delta) in plot_me.items():
+        accuracy_values.append(acc)
+        delta_values.append(delta)
+        l, = panel1.plot(delta, acc, 'o', label=label)
+        lines.append(l)
+
+    m, b = np.polyfit(delta_values, accuracy_values, 1)
+    panel1.plot(delta_values, m * np.array(delta_values) + b,
+                label=f"slope={round(m, 4)} \n intercept={round(b, 4)}")
+
+    panel1.legend(loc='upper center', bbox_to_anchor=(0.5, -0.08),
+                  fancybox=True, shadow=True, ncol=4)
+    annot = panel1.annotate("", xy=(0, 0), xytext=(20, 20), textcoords="offset points",
+                            bbox=dict(boxstyle="round", fc="w"),
+                            arrowprops=dict(arrowstyle="->"))
+    annot.set_visible(False)
+
+    def update_annot(line, idx):
+        posx, posy = [line.get_xdata()[idx], line.get_ydata()[idx]]
+        annot.xy = (posx, posy)
+        text = f'{line.get_label()}: {posx:.2f}-{posy:.2f}'
+        annot.set_text(text)
+        # annot.get_bbox_patch().set_facecolor(cmap(norm(c[ind["ind"][0]])))
+        annot.get_bbox_patch().set_alpha(0.4)
+
+    def hover(event):
+        vis = annot.get_visible()
+        if event.inaxes == panel1:
+            for line in lines:
+                cont, ind = line.contains(event)
+                if cont:
+                    update_annot(line, ind['ind'][0])
+                    annot.set_visible(True)
+                    fig.canvas.draw_idle()
+                else:
+                    if vis:
+                        annot.set_visible(False)
+                        fig.canvas.draw_idle()
+
+    fig.canvas.mpl_connect("motion_notify_event", hover)
+
+    return plt, list(plot_me.keys())

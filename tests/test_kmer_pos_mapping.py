@@ -24,7 +24,7 @@ class TestKmerPosMapping(unittest.TestCase):
         cls.mod_file = os.path.join(cls.HOME, "tests/test_files/mod_file.csv")
         cls.pos_file = os.path.join(cls.HOME, "tests/test_files/yeast_18S_25S_variants.positions")
 
-        cls.cpm = KmerPosMapping(cls.test_reference, cls.pos_file, cls.mod_file)
+        cls.kpm = KmerPosMapping(cls.test_reference, cls.pos_file, cls.mod_file)
 
     def test_get_kmers_from_seq(self):
         kmers = get_kmers_from_seq("ATGCA", kmer_length=5)
@@ -53,35 +53,31 @@ class TestKmerPosMapping(unittest.TestCase):
         self.assertSequenceEqual([{'CT', 'CE'}, {'EG', 'TG', 'EF', 'TF'}, {'GG', 'FG'}], kmers)
 
     def test_get_covered_bases(self):
-        self.assertTrue(self.cpm.get_covered_bases())
-        csp = self.cpm.contig_strand_position(contig="RDN18-1", strand="+", position=1186)
-        self.assertSetEqual(self.cpm.pos_2_kmers[csp], {'TCAGl', 'gCAGT', 'TCAGT', 'gCAGl'})
-        self.assertSequenceEqual(self.cpm.kmer_2_pos["gCAGl"], [csp])
-        self.assertSequenceEqual(self.cpm.pos_2_covered_kmers[csp],
+        self.assertTrue(self.kpm.get_covered_bases())
+        csp = self.kpm.contig_strand_position(contig="RDN18-1", strand="+", position=1186)
+        self.assertSetEqual(self.kpm.pos_2_kmers[csp], {'TCAGl', 'gCAGT', 'TCAGT', 'gCAGl'})
+        self.assertSequenceEqual(self.kpm.kmer_2_pos["gCAGl"], [csp])
+        self.assertSequenceEqual(self.kpm.pos_2_covered_kmers[csp],
                                  [{'lTTAA', 'TTTAA'},
                                   {'GlTTA', 'GTTTA'},
                                   {'AGTTT', 'AGlTT'},
                                   {'CAGlT', 'CAGTT'},
                                   {'TCAGl', 'gCAGT', 'TCAGT', 'gCAGl'}])
-        self.assertSequenceEqual(self.cpm.pos_2_overlap_pos[csp],
-                                 [self.cpm.contig_strand_position(contig="RDN18-1", strand="+", position=1190)])
+        self.assertSequenceEqual(self.kpm.pos_2_overlap_pos[csp],
+                                 [self.kpm.contig_strand_position(contig="RDN18-1", strand="+", position=1190)])
 
     def test_read_in_mod_data(self):
         mod_data = KmerPosMapping.read_in_mod_data(self.test_mod_file)
         self.assertSequenceEqual(list(mod_data.columns),
                                  ["contig", "mod", "pos", "percent", "strand", "reference_index"])
 
-    # TODO
-    def test_index_kmers_in_reference(self):
-        pass
-
     def test_get_positions_covering_kmer(self):
-        positions = self.cpm.get_positions_covering_kmer("gCAGl")
-        self.assertSequenceEqual([self.cpm.contig_strand_position(contig="RDN18-1", strand="+", position=1186)],
+        positions = self.kpm.get_positions_covering_kmer("gCAGl")
+        self.assertSequenceEqual([self.kpm.contig_strand_position(contig="RDN18-1", strand="+", position=1186)],
                                  positions)
 
     def test_get_kmers_covering_mod(self):
-        kmers = self.cpm.get_kmers_covering_mod(
+        kmers = self.kpm.get_kmers_covering_mod(
             contig="RDN18-1", strand="+", position=1186)
         self.assertSequenceEqual([{'lTTAA', 'TTTAA'},
                                   {'GlTTA', 'GTTTA'},
@@ -91,18 +87,18 @@ class TestKmerPosMapping(unittest.TestCase):
                                  kmers)
 
     def test_get_reference_position_kmers(self):
-        kmers = self.cpm.get_reference_position_kmers(contig="RDN18-1", strand="+", position=1186)
+        kmers = self.kpm.get_reference_position_kmers(contig="RDN18-1", strand="+", position=1186)
         self.assertSetEqual({'TCAGl', 'gCAGT', 'TCAGT', 'gCAGl'}, kmers)
-        kmers = self.cpm.get_reference_position_kmers(contig="RDN18-1", strand="+", position=1800)
+        kmers = self.kpm.get_reference_position_kmers(contig="RDN18-1", strand="+", position=1800)
         self.assertFalse(kmers)
-        kmers = self.cpm.get_reference_position_kmers(contig="RDN18-1", strand="+", position=4)
+        kmers = self.kpm.get_reference_position_kmers(contig="RDN18-1", strand="+", position=4)
         self.assertSetEqual({"TTGGT"}, kmers)
 
     def test_get_neighboring_mods(self):
-        mods = self.cpm.get_neighboring_mods(contig="RDN18-1", strand="+", position=1186)
+        mods = self.kpm.get_neighboring_mods(contig="RDN18-1", strand="+", position=1186)
         self.assertSequenceEqual(mods,
-                                 [self.cpm.contig_strand_position(contig="RDN18-1", strand="+", position=1190)])
-        mods = self.cpm.get_neighboring_mods(contig="RDN18-1", strand="+", position=1)
+                                 [self.kpm.contig_strand_position(contig="RDN18-1", strand="+", position=1190)])
+        mods = self.kpm.get_neighboring_mods(contig="RDN18-1", strand="+", position=1)
         self.assertFalse(mods)
 
 

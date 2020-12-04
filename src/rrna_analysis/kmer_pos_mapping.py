@@ -126,6 +126,7 @@ class KmerPosMapping(object):
         self.ref_handler = ReferenceHandler(self.reference)
         self.positions_data = CustomAmbiguityPositions.parseAmbiguityFile(self.positions)
         self._index_kmers_in_reference()
+        self.get_covered_bases()
 
     @staticmethod
     def read_in_mod_data(mods_csv):
@@ -177,7 +178,7 @@ class KmerPosMapping(object):
 
         for i, p in enumerate(all_pos):
             csp = self.contig_strand_position(contig=contig, strand=strand, position=p)
-            self.pos_2_covered_kmers[csp] = kmers[i:5 + i]
+            self.pos_2_covered_kmers[csp] = kmers[i:self.kmer_length + i]
             missing_pos = all_pos[:i] + all_pos[i + 1:]
             self.pos_2_overlap_pos[csp] = [self.contig_strand_position(contig=contig,
                                                                        strand=strand,
