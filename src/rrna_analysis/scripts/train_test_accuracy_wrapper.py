@@ -10,14 +10,16 @@
 
 import os
 import re
-from argparse import ArgumentParser
 import shutil
-from py3helpers.utils import list_dir, load_json, time_it, save_json, create_dot_dict
-from subprocess import check_call
-from re_run_signalalign import re_run_signalalign
-from signalalign.visualization.plot_multiple_variant_accuracy import plot_multiple_variant_accuracy
+from argparse import ArgumentParser
 from itertools import zip_longest
-from run_embed_plot_wrapper import run_embed_plot_wrapper
+from subprocess import check_call
+
+from py3helpers.utils import list_dir, load_json, create_dot_dict
+from rrna_analysis.scripts.re_run_signalalign import re_run_signalalign
+from rrna_analysis.scripts.run_embed_plot_wrapper import run_embed_plot_wrapper
+from signalalign.visualization.plot_multiple_variant_accuracy import plot_multiple_variant_accuracy
+
 
 # * Train
 # * trainModels run --config /home/ubuntu/rRNA2/sa_workspace/supervised/less_data_testing_07_03_20/mod_only_nopgal_80_prob/rrna_trainModels_config.json

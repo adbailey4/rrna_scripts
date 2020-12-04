@@ -9,13 +9,11 @@
 ########################################################################
 
 import os
-import sys
 from argparse import ArgumentParser
-import numpy as np
-from plot_per_position_kmer_distributions import plot_per_position_kmer_distributions
 from subprocess import check_call
 
-from py3helpers.utils import create_dot_dict, load_json, time_it, list_dir, merge_lists
+from py3helpers.utils import create_dot_dict, load_json, time_it
+from rrna_analysis.scripts.plot_per_position_kmer_distributions import plot_per_position_kmer_distributions
 
 
 def parse_args():
