@@ -93,6 +93,15 @@ def csv_model_mapping(csv_dir, model_dir):
     return csv_model_map
 
 
+def sort_dir(csv_dir, ext="csv"):
+    """Sort files by the first number in the basename"""
+    files = list_dir(csv_dir, ext)
+    csv_model_map = []
+    for f in files:
+        csv_model_map.append((get_first_int(os.path.basename(f)), f))
+    return [x for (i, x) in sorted(csv_model_map, key=lambda x: x[0])]
+
+
 def plot_accuracy_vs_delta_and_accuracy_over_time(kmer_pos_mapping, directory, model_dir, model_n, high_percent=100,
                                                   low_percent=0, low_delta=0, high_delta=np.inf, key="accuracy",
                                                   max_delta=False, aot=True, avd=True):

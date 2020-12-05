@@ -126,7 +126,7 @@ class KmerPosMapping(object):
         self.ref_handler = ReferenceHandler(self.reference)
         self.positions_data = CustomAmbiguityPositions.parseAmbiguityFile(self.positions)
         self._index_kmers_in_reference()
-        self.get_covered_bases()
+        self._get_covered_bases()
 
     @staticmethod
     def read_in_mod_data(mods_csv):
@@ -139,7 +139,7 @@ class KmerPosMapping(object):
         mods_df["reference_index"] = mods_df["pos"] - 1
         return mods_df
 
-    def get_covered_bases(self):
+    def _get_covered_bases(self):
         """Get all covered kmers by position.
         """
         contig = None

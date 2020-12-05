@@ -10,7 +10,7 @@
 import unittest
 import numpy as np
 from rrna_analysis.kmer_pos_mapping import *
-from rrna_analysis.multiple_model_accuracy import plot_accuracy_vs_delta_and_accuracy_over_time
+from rrna_analysis.multiple_model_accuracy import *
 
 
 class TestKmerPosMapping(unittest.TestCase):
@@ -26,6 +26,11 @@ class TestKmerPosMapping(unittest.TestCase):
         cls.pos_file = os.path.join(cls.HOME, "tests/test_files/yeast_18S_25S_variants.positions")
 
         cls.kpm = KmerPosMapping(cls.test_reference, cls.pos_file, cls.mod_file)
+
+    # def test_sort_dir(self):
+    #     dir_path = "/Volumes/gdrive/rrna_kube_testing/supervised/probability_sweep/" \
+    #                "train_500_test_500_prob_0.5_em_iterations_30/testing_accuracy_csvs"
+    #     print(sort_dir(dir_path))
 
     # def test_plot(self):
     #     key = "accuracy"
