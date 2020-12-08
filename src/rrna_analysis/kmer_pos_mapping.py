@@ -11,6 +11,7 @@
 import os
 from collections import namedtuple, defaultdict
 
+import numpy as np
 import pandas as pd
 from py3helpers.seq_tools import ReferenceHandler, ReverseComplement
 from signalalign.utils.sequenceTools import CustomAmbiguityPositions, reverse_complement
@@ -127,6 +128,27 @@ class KmerPosMapping(object):
         self.positions_data = CustomAmbiguityPositions.parseAmbiguityFile(self.positions)
         self._index_kmers_in_reference()
         self._get_covered_bases()
+        self.mod_handler = self.create_mod_handler()
+
+    def create_mod_handler(self):
+        all_pos_data = pd.merge(self.positions_data, self.mod_data, left_on=["contig", "strand", "position"],
+                                right_on=["contig", "strand", "reference_index"]).sort_values(by=['contig', 'position'])
+
+        all_pos_data['delta1'] = all_pos_data.reference_index.diff().shift(-1)
+        all_pos_data['delta2'] = np.abs(all_pos_data.reference_index.diff().shift(0))
+        all_pos_data['delta'] = all_pos_data[["delta1", "delta2"]].min(axis=1)
+        all_pos_data["in_2prime"] = (((all_pos_data.change_to.shift().isin(["Aa", "Cb", "Gc", "Td", "Tdm"]) &
+                                       (all_pos_data.delta2 <= 5)) |
+                                      (all_pos_data.change_to.shift(-1).isin(["Aa", "Cb", "Gc", "Td", "Tdm"]) &
+                                       (all_pos_data.delta1 <= 5))) & (
+                                         ~all_pos_data.change_to.isin(["Aa", "Cb", "Gc", "Td"])))
+        all_pos_data["in_pseudo"] = (((all_pos_data.change_to.shift().isin(["Tl"]) &
+                                       (all_pos_data.delta2 <= 5)) |
+                                      (all_pos_data.change_to.shift(-1).isin(["Tl", "Tdm"]) &
+                                       (all_pos_data.delta1 <= 5))) &
+                                     (~all_pos_data.change_to.isin(["Tl"])))
+        all_pos_data["in_unknown"] = (all_pos_data["in_pseudo"] | all_pos_data["in_2prime"])
+        return all_pos_data
 
     @staticmethod
     def read_in_mod_data(mods_csv):

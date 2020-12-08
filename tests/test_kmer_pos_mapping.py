@@ -26,6 +26,12 @@ class TestKmerPosMapping(unittest.TestCase):
 
         cls.kpm = KmerPosMapping(cls.test_reference, cls.pos_file, cls.mod_file)
 
+    def test_create_mod_handler(self):
+        self.assertSequenceEqual(list(self.kpm.create_mod_handler().columns),
+                                 ['contig', 'position', 'strand', 'change_from', 'change_to', 'mod',
+                                  'pos', 'percent', 'reference_index', 'delta1', 'delta2', 'delta',
+                                  'in_2prime', 'in_pseudo', 'in_unknown'])
+
     def test_get_kmers_from_seq(self):
         kmers = get_kmers_from_seq("ATGCA", kmer_length=5)
         self.assertSequenceEqual(["ATGCA"], kmers)
@@ -53,7 +59,6 @@ class TestKmerPosMapping(unittest.TestCase):
         self.assertSequenceEqual([{'CT', 'CE'}, {'EG', 'TG', 'EF', 'TF'}, {'GG', 'FG'}], kmers)
 
     def test_get_covered_bases(self):
-        self.assertTrue(self.kpm.get_covered_bases())
         csp = self.kpm.contig_strand_position(contig="RDN18-1", strand="+", position=1186)
         self.assertSetEqual(self.kpm.pos_2_kmers[csp], {'TCAGl', 'gCAGT', 'TCAGT', 'gCAGl'})
         self.assertSequenceEqual(self.kpm.kmer_2_pos["gCAGl"], [csp])
