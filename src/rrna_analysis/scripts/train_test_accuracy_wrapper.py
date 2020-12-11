@@ -70,6 +70,16 @@ def re_run_plot_variant_accuracy(output_dir, testing_dir, positions_files, names
         plot_multiple_variant_accuracy(test_output_dir, samples, threshold)
 
 
+def copy_variant_call_files(testing_dir, suffixes, output_dir):
+    """Copy variant call files from testing into their own directories"""
+    dirs = [os.path.join(testing_dir, x) for x in os.listdir(testing_dir) if not x.endswith("created_models")]
+    for vc_dir in dirs:
+        test_output_dir = os.path.join(output_dir, os.path.basename(vc_dir))
+        os.mkdir(test_output_dir)
+        for suffix in suffixes:
+            shutil.copy2(os.path.join(vc_dir, suffix), test_output_dir)
+
+
 def get_trailing_number(s):
     m = re.search(r'\d+$', s)
     return int(m.group()) if m else None
@@ -84,6 +94,8 @@ def main():
     training_dir = os.path.join(config_dict.base_directory, "training")
     training_model_dir = os.path.join(config_dict.base_directory, "training_models")
     testing_dir = os.path.join(config_dict.base_directory, "testing")
+    all_variant_calls = os.path.join(config_dict.base_directory, "all_variant_calls")
+
     testing_accuracy_dir = os.path.join(config_dict.base_directory, "testing_accuracy")
     training_accuracy_dir = os.path.join(config_dict.base_directory, "training_accuracy")
     testing_accuracy_csvs_dir = os.path.join(config_dict.base_directory, "testing_accuracy_csvs")
@@ -103,7 +115,10 @@ def main():
     if config_dict.options["test"]:
         assert not os.path.exists(testing_dir), "Directory should not exist: {}. Check base_directory".format(testing_dir)
         os.mkdir(testing_dir)
+        assert not os.path.exists(all_variant_calls), "Directory should not exist: {}. Check base_directory".format(all_variant_calls)
+        os.mkdir(all_variant_calls)
     assert os.path.exists(testing_dir), "Directory should exist: {}. Check base_directory".format(testing_dir)
+    assert os.path.exists(all_variant_calls), "Directory should exist: {}. Check base_directory".format(all_variant_calls)
 
     if config_dict.options["plot_accuracies"]:
         assert not os.path.exists(testing_accuracy_dir), \
@@ -140,6 +155,7 @@ def main():
             shutil.copy2(os.path.join(training_dir,
                                       "tempFiles_trainModels_{}/template_hmm{}.model".format(i, i)),
                          training_model_dir)
+
     if config_dict.options["test"]:
         print("TESTING", flush=True)
         # test model
@@ -148,6 +164,10 @@ def main():
                            config_dict.test_model["base_model"],
                            config_dict.test_model["variants"],
                            config_dict.test_model["rna"])
+        test_config = load_json(config_dict.test_model["base_model"])
+        names = [sample["name"] for sample in test_config.samples]
+        suffixes = ["variant_calls/{}.csv".format(name) for name in names]
+        copy_variant_call_files(testing_dir, suffixes, all_variant_calls)
 
     if config_dict.options["plot_accuracies"]:
         print("PLOTTING ACCURACIES:TEST", flush=True)
