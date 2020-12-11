@@ -165,7 +165,7 @@ def main():
                            config_dict.test_model["variants"],
                            config_dict.test_model["rna"])
         test_config = load_json(config_dict.test_model["base_model"])
-        names = [sample["name"] for sample in test_config.samples]
+        names = [sample["name"] for sample in test_config["samples"]]
         suffixes = ["variant_calls/{}.csv".format(name) for name in names]
         copy_variant_call_files(testing_dir, suffixes, all_variant_calls)
 
