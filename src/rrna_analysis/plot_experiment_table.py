@@ -124,15 +124,15 @@ def check_s3_training_distributions(client, experiments):
     experiment_buckets = [
         os.path.join(s3_bucket_dists, "/".join(experiment.split("/")[experiment.split("/").index("supervised"):-1]),
                      "training_distributions") for experiment in experiments]
-    names = ["_".join(x.split("/")[-2].split("_")) for x in experiment_buckets]
+    names = ["-".join(x.split("/")[-4:-1]) for x in experiment_buckets]
     return experiment_buckets, names
 
 
-def create_html_file_for_mod(client, mod_key, pos_list, experiment_buckets, names,
+def create_html_file_for_mod(client, mod_title, mod_key, pos_list, experiment_buckets, names,
                              html_output_bucket="bailey-k8s/html/experiment_plotting_htmls/"):
     soup = BeautifulSoup("", 'html.parser')
     table = soup.new_tag("table")
-    table.string = mod_key
+    table.string = mod_title
     soup.insert(1, table)
     table["style"] = "width:100%"
 
@@ -147,7 +147,11 @@ def create_html_file_for_mod(client, mod_key, pos_list, experiment_buckets, name
 
     for i, bucket in enumerate(experiment_buckets):
         title_tag = soup.new_tag("th")
-        title_tag.string = names[i]
+        for z, row in enumerate(names[i].split("-")):
+            par_tag = soup.new_tag("p")
+            par_tag.string = row
+            title_tag.insert(1, par_tag)
+        #         title_tag.string = names[i]
         title_row.insert(1, title_tag)
         for j, pos in enumerate(pos_list):
             row_tag = soup.new_tag("td")
@@ -179,10 +183,13 @@ def create_html_distributions(experiments, plot_df, client=None):
     experiment_buckets, names = check_s3_training_distributions(client, experiments)
     url_dict = {"_".join([str(x) for x in list(plot_df[["contig", "position", "strand"]].loc[i])]): "" for i in
                 plot_df.index}
+    mod_title_dict = {"_".join([str(x) for x in list(plot_df[["contig", "position", "strand"]].loc[i])]): "_".join([str(x) for x in list(plot_df[["contig", "position", "strand", "mod", "percent", "delta"]].loc[i])]) for i in
+                      plot_df.index}
+
     for mod_key in url_dict.keys():
         mod_pos = int(mod_key.split("_")[1])
         pos_list = list(range(mod_pos - 4, mod_pos + 1))
-        mod_key, s3_gif_url = create_html_file_for_mod(client, mod_key, pos_list, experiment_buckets, names)
+        mod_key, s3_gif_url = create_html_file_for_mod(client, mod_title_dict[mod_key], mod_key, pos_list, experiment_buckets, names)
         url_dict[mod_key] = s3_gif_url
     return url_dict
 
