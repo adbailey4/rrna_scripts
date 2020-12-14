@@ -200,7 +200,8 @@ class KmerPosMapping(object):
 
         for i, p in enumerate(all_pos):
             csp = self.contig_strand_position(contig=contig, strand=strand, position=p)
-            self.pos_2_covered_kmers[csp] = kmers[i:self.kmer_length + i]
+            offset = p - all_pos[0]
+            self.pos_2_covered_kmers[csp] = kmers[offset:self.kmer_length + offset]
             missing_pos = all_pos[:i] + all_pos[i + 1:]
             self.pos_2_overlap_pos[csp] = [self.contig_strand_position(contig=contig,
                                                                        strand=strand,
