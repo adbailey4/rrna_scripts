@@ -50,8 +50,8 @@ def get_acc_data_from_experiments(experiments, key, round_n, kpm):
     and key accuracy metric
     """
     data = []
-    for experiment in experiments:
-        accuracy_csv = sort_dir(experiment)[round_n - 1]
+    for rn, experiment in zip(round_n, experiments):
+        accuracy_csv = sort_dir(experiment)[rn - 1]
         acc = preprocess_accuracy_csv(accuracy_csv, kpm.mod_data)[key].T
         if len(acc) != 110:
             continue
@@ -190,6 +190,9 @@ def create_html_distributions(experiments, plot_df, client=None):
 def plot_acc_heatmap_for_experiment(dirs, key, kpm, min_percent=90, max_percent=100, max_delta=np.inf, min_delta=6,
                                     round_n=30, show_numbers=True, client=None):
     experiments = find_experiments(dirs)
+    if not isinstance(round_n, list):
+        round_n = [round_n for i in range(len(experiments))]
+    assert len(round_n) == len(experiments), f"len(round_n) != len(experiments): {len(round_n)} != {len(experiments)}"
     final_data_frame = get_acc_data_from_experiments(experiments, key, round_n, kpm)
     plot_df = final_data_frame[(final_data_frame["percent"] >= min_percent) &
                                (final_data_frame["percent"] <= max_percent) &

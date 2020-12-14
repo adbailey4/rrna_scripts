@@ -70,6 +70,8 @@ class TestKmerPosMapping(unittest.TestCase):
                                   {'TCAGl', 'gCAGT', 'TCAGT', 'gCAGl'}])
         self.assertSequenceEqual(self.kpm.pos_2_overlap_pos[csp],
                                  [self.kpm.contig_strand_position(contig="RDN18-1", strand="+", position=1190)])
+        # csp = self.kpm.contig_strand_position(contig="RDN25-1", strand="+", position=648)
+        # print(self.kpm.pos_2_covered_kmers[csp])
 
     def test_read_in_mod_data(self):
         mod_data = KmerPosMapping.read_in_mod_data(self.test_mod_file)
