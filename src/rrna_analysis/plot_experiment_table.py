@@ -22,7 +22,6 @@ from rrna_analysis.multiple_model_accuracy import sort_dir, \
     preprocess_accuracy_csv
 from rrna_analysis.kmer_pos_mapping import KmerPosMapping
 
-
 from IPython.display import set_matplotlib_formats
 
 set_matplotlib_formats('svg')
@@ -41,7 +40,7 @@ def find_experiments(top_dirs):
         for x in get_all_sub_directories(top_dir):
             if x.endswith("testing_accuracy_csvs") and x not in dirs:
                 dirs.append(x)
-
+    assert len(dirs) > 0, "No experiment directory found. len(dirs) == 0"
     return dirs
 
 
@@ -57,11 +56,12 @@ def get_acc_data_from_experiments(experiments, key, round_n, kpm):
             continue
         data.append(acc)
 
+    split_experiments = [x.split("/") for x in experiments]
     i = 0
-    for i, n in enumerate(zip_longest(*experiments)):
+    for i, n in enumerate(zip_longest(*split_experiments)):
         if len(set(n)) != 1:
             break
-    experiment_names = ["\n".join(re.split('[_/]', x[i:-22])) for x in experiments]
+    experiment_names = ["\n".join(["\n".join(i.split("_")) for i in x[i:-1]]) for x in split_experiments]
 
     final_data_frame = pd.merge(kpm.mod_handler, pd.DataFrame(np.array(data).T, columns=experiment_names),
                                 left_index=True, right_index=True)
@@ -73,7 +73,9 @@ def plot_heatmap_of_experiment(plot_df, key, urls=None, show_numbers=True):
     cmap = "RdYlGn"
     cmap = "viridis"
 
-    x_labels = [x for x in plot_df.columns if "test" in x]
+    not_columns = ['contig', 'position', 'strand', 'change_from', 'change_to', 'mod', 'pos', 'percent',
+                   'reference_index', 'delta1', 'delta2', 'delta', 'in_2prime', 'in_pseudo', 'in_unknown']
+    x_labels = [x for x in plot_df.columns if x not in not_columns]
     y_labels = ["_".join([str(x) for x in plot_df[["contig", "reference_index"]].loc[i]]) for i in plot_df.index]
     data = plot_df[x_labels]
 
@@ -129,15 +131,19 @@ def check_s3_training_distributions(client, experiments):
 
 
 def create_html_file_for_mod(client, mod_title, mod_key, pos_list, experiment_buckets, names,
-                             html_output_bucket="bailey-k8s/html/experiment_plotting_htmls/"):
+                             html_output_bucket="bailey-k8s/html/experiment_plotting_htmls/", overwrite=False):
     soup = BeautifulSoup("", 'html.parser')
     table = soup.new_tag("table")
-    table.string = mod_title
-    soup.insert(1, table)
     table["style"] = "width:100%"
+    soup.insert(1, table)
+
+    title = soup.new_tag("strong")
+    title["style"] = "font-size:30px"
+    title.string = mod_title
+    table.insert(1, title)
 
     title_row = soup.new_tag("tr")
-    table.insert(1, title_row)
+    table.insert(2, title_row)
 
     image_rows = []
     for i in range(2, len(pos_list) + 2):
@@ -145,31 +151,37 @@ def create_html_file_for_mod(client, mod_title, mod_key, pos_list, experiment_bu
         table.insert(i, image_row)
         image_rows.append(image_row)
 
+#     print(experiment_buckets)
     for i, bucket in enumerate(experiment_buckets):
         title_tag = soup.new_tag("th")
         for z, row in enumerate(names[i].split("-")):
             par_tag = soup.new_tag("p")
             par_tag.string = row
-            title_tag.insert(1, par_tag)
+            title_tag.insert(z+1, par_tag)
         #         title_tag.string = names[i]
-        title_row.insert(1, title_tag)
+        title_row.insert(i + 1, title_tag)
         for j, pos in enumerate(pos_list):
             row_tag = soup.new_tag("td")
-            row_tag.string = str(pos)
-            image_rows[j].insert(1, row_tag)
+            row_tag["style"] = "border: 1px solid black"
+            image_rows[j].insert(i + 1, row_tag)
+
+            par_tag = soup.new_tag("p")
+            par_tag.string = str(pos)
+            row_tag.insert(1, par_tag)
+
             image_tag = soup.new_tag("img")
             image_tag["width"] = 500
-            s3_mod_name = mod_key.replace("+", "%2B")
-            image_tag['src'] = os.path.join(bucket, s3_mod_name, str(pos) + ".gif")
-            row_tag.insert(1, image_tag)
+            image_tag['src'] = os.path.join(bucket, mod_key.replace("+", "%2B"), str(pos) + ".gif")
+            row_tag.insert(2, image_tag)
+
     with open("output.html", "w") as fh:
         print(soup.prettify(), file=fh)
-
+    #     print(soup.prettify())
     out_file_name = "_".join(names + [mod_key]) + ".html"
     s3_file = os.path.join(html_output_bucket, out_file_name)
-    if not client.object_exists(s3_file):
-        s3_path = client.upload_object(file_path="output.html", destination=s3_file, use_original_name=False,
-                                       ExtraArgs={'ContentType': "text/html", 'ACL': "public-read"})
+    if not client.object_exists(s3_file) or overwrite:
+        _ = client.upload_object(file_path="output.html", destination=s3_file, use_original_name=False,
+                                 ExtraArgs={'ContentType': "text/html", 'ACL': "public-read"})
     #     need to replace +
     s3_gif_url = s3_file.replace("bailey-k8s/", "https://bailey-k8s.s3-us-west-2.amazonaws.com/")
     s3_gif_url = s3_gif_url.replace("+", "%2B")
@@ -177,25 +189,32 @@ def create_html_file_for_mod(client, mod_title, mod_key, pos_list, experiment_bu
     return mod_key, s3_gif_url
 
 
-def create_html_distributions(experiments, plot_df, client=None):
+def create_html_distributions(experiments, plot_df, client=None, overwrite=False):
     if client is None:
         client = AwsS3()
-    experiment_buckets, names = check_s3_training_distributions(client, experiments)
+    try:
+        experiment_buckets, names = check_s3_training_distributions(client, experiments)
+    except AssertionError as e:
+        print(e)
+        return None
     url_dict = {"_".join([str(x) for x in list(plot_df[["contig", "position", "strand"]].loc[i])]): "" for i in
                 plot_df.index}
-    mod_title_dict = {"_".join([str(x) for x in list(plot_df[["contig", "position", "strand"]].loc[i])]): "_".join([str(x) for x in list(plot_df[["contig", "position", "strand", "mod", "percent", "delta"]].loc[i])]) for i in
+    mod_title_dict = {"_".join([str(x) for x in list(plot_df[["contig", "position", "strand"]].loc[i])]):
+                          "_".join([str(x) for x in list(plot_df[["contig", "position", "strand", "mod",
+                                                                  "percent", "delta"]].loc[i])]) for i in
                       plot_df.index}
 
     for mod_key in url_dict.keys():
         mod_pos = int(mod_key.split("_")[1])
         pos_list = list(range(mod_pos - 4, mod_pos + 1))
-        mod_key, s3_gif_url = create_html_file_for_mod(client, mod_title_dict[mod_key], mod_key, pos_list, experiment_buckets, names)
+        mod_key, s3_gif_url = create_html_file_for_mod(client, mod_title_dict[mod_key], mod_key, pos_list,
+                                                       experiment_buckets, names, overwrite=overwrite)
         url_dict[mod_key] = s3_gif_url
     return url_dict
 
 
 def plot_acc_heatmap_for_experiment(dirs, key, kpm, min_percent=90, max_percent=100, max_delta=np.inf, min_delta=6,
-                                    round_n=30, show_numbers=True, client=None):
+                                    round_n=30, show_numbers=True, client=None, overwrite=False):
     experiments = find_experiments(dirs)
     if not isinstance(round_n, list):
         round_n = [round_n for i in range(len(experiments))]
@@ -205,5 +224,5 @@ def plot_acc_heatmap_for_experiment(dirs, key, kpm, min_percent=90, max_percent=
                                (final_data_frame["percent"] <= max_percent) &
                                (final_data_frame["delta"] >= min_delta) &
                                (final_data_frame["delta"] <= max_delta)]
-    mod_s3_urls = create_html_distributions(experiments, plot_df, client=client)
+    mod_s3_urls = create_html_distributions(experiments, plot_df, client=client, overwrite=overwrite)
     plot_heatmap_of_experiment(plot_df, key, mod_s3_urls, show_numbers=show_numbers)
