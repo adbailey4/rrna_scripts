@@ -21,24 +21,6 @@ from rrna_analysis.scripts.run_embed_plot_wrapper import run_embed_plot_wrapper
 from signalalign.visualization.plot_multiple_variant_accuracy import plot_multiple_variant_accuracy
 
 
-# * Train
-# * trainModels run --config /home/ubuntu/rRNA2/sa_workspace/supervised/less_data_testing_07_03_20/mod_only_nopgal_80_prob/rrna_trainModels_config.json
-#
-# * Test
-# * [Copy model files bash helper](#Copy-model-files-bash-helper)
-# * python /home/ubuntu/rRNA2/re_run_signalalign.py --dir /home/ubuntu/rRNA2/sa_workspace/supervised/less_data_testing_07_03_20/mod_only_nopgal_80_prob/training_models --output_dir /home/ubuntu/rRNA2/sa_workspace/supervised/less_data_testing_07_03_20/mod_only_nopgal_80_prob/testing --base_model /home/ubuntu/rRNA2/sa_workspace/supervised/less_data_testing_07_03_20/mod_only_nopgal_80_prob/re_runSignalAlign_testing_config.json --variants BDEFHIJKLMOPQR --rna
-#
-#                                                                                                                                                                                                                                                                                                                                                                                                                                                          * Plot Distributions
-#                                                                                                                                                                                                                                                                                                                                                                                                                                                                 * [Generate iterations helper](#Generate-iterations-helper)
-#     * python /home/ubuntu/rRNA2/run_embed_plot_wrapper.py -c /home/ubuntu/rRNA2/sa_workspace/supervised/less_data_testing_07_03_20/mod_only_nopgal_80_prob/run_embed_plot_wrapper2.config.json
-#       * Time:
-#
-# * Plot accuracy over time
-#                      * [Run plot_mulitple_variant_accuracy.py many times](#Re run plot_multiple_variant_accuracy)
-#     * [Get all variant calls to single directory](Get all variant calls to single directory)
-# * Plot via jupyter notebook
-
-
 def parse_args():
     parser = ArgumentParser(description=__doc__)
     # required arguments
@@ -85,7 +67,6 @@ def get_trailing_number(s):
     return int(m.group()) if m else None
 
 
-
 def get_hdp_models(top_dir):
     """Grab all paths to hdp files within sub directories
     :param top_dir: path to top search directory
@@ -112,7 +93,8 @@ def main():
     training_distributions_dir = os.path.join(config_dict.base_directory, "training_distributions")
 
     if config_dict.options["train"]:
-        assert not os.path.exists(training_dir), "Directory should not exist: {}. Check base_directory".format(training_dir)
+        assert not os.path.exists(training_dir), \
+            "Directory should not exist: {}. Check base_directory".format(training_dir)
         os.mkdir(training_dir)
         assert not os.path.exists(training_model_dir), \
             "Directory should not exist: {}. Check base_directory".format(training_model_dir)
@@ -122,12 +104,15 @@ def main():
         "Directory should exist: {}. Check base_directory".format(training_model_dir)
 
     if config_dict.options["test"]:
-        assert not os.path.exists(testing_dir), "Directory should not exist: {}. Check base_directory".format(testing_dir)
+        assert not os.path.exists(testing_dir), \
+            "Directory should not exist: {}. Check base_directory".format(testing_dir)
         os.mkdir(testing_dir)
-        assert not os.path.exists(all_variant_calls), "Directory should not exist: {}. Check base_directory".format(all_variant_calls)
+        assert not os.path.exists(all_variant_calls), \
+            "Directory should not exist: {}. Check base_directory".format(all_variant_calls)
         os.mkdir(all_variant_calls)
     assert os.path.exists(testing_dir), "Directory should exist: {}. Check base_directory".format(testing_dir)
-    assert os.path.exists(all_variant_calls), "Directory should exist: {}. Check base_directory".format(all_variant_calls)
+    assert os.path.exists(all_variant_calls), \
+        "Directory should exist: {}. Check base_directory".format(all_variant_calls)
 
     if config_dict.options["plot_accuracies"]:
         assert not os.path.exists(testing_accuracy_dir), \
@@ -152,10 +137,12 @@ def main():
     if config_dict.options["train"]:
         print("TRAINING", flush=True)
         execute = "trainModels.py run --config {}"
-        assert os.path.exists(config_dict.train_model), "train_model path does not exist {}".format(config_dict.train_model)
+        assert os.path.exists(config_dict.train_model), \
+            "train_model path does not exist {}".format(config_dict.train_model)
         train_model_config = load_json(config_dict.train_model)
         assert training_dir == train_model_config["output_dir"], \
-            "train_model path is not same as output_dir: {} != {}".format(training_dir, train_model_config["output_dir"])
+            "train_model path is not same as output_dir: {} != {}".format(training_dir,
+                                                                          train_model_config["output_dir"])
         check_call(execute.format(config_dict.train_model).split())
         # copy training models
         print("COPYING MODELS", flush=True)
@@ -181,6 +168,7 @@ def main():
         suffixes = ["variant_calls/{}.csv".format(name) for name in names]
         copy_variant_call_files(testing_dir, suffixes, all_variant_calls)
 
+    plot = False
     if config_dict.options["plot_accuracies"]:
         plot = True
     print("PLOTTING ACCURACIES:TEST", flush=True)
@@ -237,7 +225,8 @@ def main():
                     hdp_model1 = None
                 else:
                     hdp_model1 = None
-                sa_output_dirs = [os.path.join(directory, x) for x in os.listdir(directory) if os.path.isdir(os.path.join(directory, x))]
+                sa_output_dirs = [os.path.join(directory, x) for x in os.listdir(directory) if
+                                  os.path.isdir(os.path.join(directory, x))]
                 iterations.append({"name": "iteration0",
                                    "hmm_model": hmm_model0,
                                    "hdp_model": None,
@@ -253,6 +242,10 @@ def main():
                 hdp_model = list_dir(directory, ext="nhdp")
                 if len(hdp_model) == 1:
                     hdp_model = hdp_model[0]
+                elif len(hdp_model) == 2:
+                    print("HEY FIGURE OUT HOW TO DEAL WITH THIS DUDE!")
+                    print(hdp_model)
+                    hdp_model = None
                 else:
                     hdp_model = None
 
