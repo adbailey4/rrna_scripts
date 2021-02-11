@@ -41,6 +41,8 @@ def re_run_signalalign(directory, output_dir, base_model, variants, rna):
     assert os.path.isdir(output_dir), "{} is not a directory".format(output_dir)
     assert os.path.exists(base_model), "{} does not exist".format(base_model)
     models = list_dir(directory, ext="model")
+    hdp_models = list_dir(directory, ext="nhdp")
+
     sa_base_model = load_json(base_model)
     created_models_dir = os.path.join(output_dir, "created_models")
     if not os.path.exists(created_models_dir):

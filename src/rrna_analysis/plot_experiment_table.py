@@ -14,6 +14,7 @@ from bs4 import BeautifulSoup
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 
 from itertools import zip_longest
 from py3helpers.utils import list_dir, get_all_sub_directories
@@ -52,8 +53,8 @@ def get_acc_data_from_experiments(experiments, key, round_n, kpm):
     for rn, experiment in zip(round_n, experiments):
         accuracy_csv = sort_dir(experiment)[rn - 1]
         acc = preprocess_accuracy_csv(accuracy_csv, kpm.mod_data)[key].T
-        if len(acc) != 110:
-            continue
+        # if len(acc) != 110:
+        #     continue
         data.append(acc)
 
     split_experiments = [x.split("/") for x in experiments]
@@ -68,13 +69,16 @@ def get_acc_data_from_experiments(experiments, key, round_n, kpm):
     return final_data_frame
 
 
-def plot_heatmap_of_experiment(plot_df, key, urls=None, show_numbers=True):
+def plot_heatmap_of_experiment(plot_df, key, urls=None, show_numbers=True, savefig=None, cmap="viridis", norm=None):
     cbarlabel = f'{key}'
-    cmap = "RdYlGn"
-    cmap = "viridis"
+    # cmap = "RdYlGn"
+    # cmap = "viridis"
 
-    not_columns = ['contig', 'position', 'strand', 'change_from', 'change_to', 'mod', 'pos', 'percent',
-                   'reference_index', 'delta1', 'delta2', 'delta', 'in_2prime', 'in_pseudo', 'in_unknown']
+    not_columns = ['contig', 'position', 'strand', 'change_from', 'change_to', 'mod',
+                   'pos', 'percent', 'reference_index', 'delta1_below', 'delta1_above',
+                   'delta2_below', 'delta2_above', 'delta3_below', 'delta3_above',
+                   'delta4_below', 'delta4_above', 'delta', 'in_2prime', 'in_pseudo',
+                   'in_unknown']
     x_labels = [x for x in plot_df.columns if x not in not_columns]
     y_labels = ["_".join([str(x) for x in plot_df[["contig", "reference_index"]].loc[i]]) for i in plot_df.index]
     data = plot_df[x_labels]
@@ -82,7 +86,7 @@ def plot_heatmap_of_experiment(plot_df, key, urls=None, show_numbers=True):
     fig, ax = plt.subplots(figsize=(8, 20))
     plt.subplots_adjust(top=0.95, bottom=0.2, right=0.98, left=0.15)
 
-    im = ax.imshow(data, aspect="auto", cmap=cmap)
+    im = ax.imshow(data, aspect="auto", cmap=cmap, norm=norm)
     cbar = ax.figure.colorbar(im, ax=ax)
     cbar.ax.set_ylabel(cbarlabel, rotation=-90, va="bottom")
 
@@ -110,13 +114,18 @@ def plot_heatmap_of_experiment(plot_df, key, urls=None, show_numbers=True):
                                url=url)
 
     ax.set_title("Data")
-    plt.show()
+    # option to save figure or just show it
+    if savefig is not None:
+        plt.savefig(savefig)
+    else:
+        plt.show()
+    plt.close(fig)
 
 
 def check_s3_training_distributions(client, experiments):
     s3_bucket_dists = "s3://bailey-k8s/rrna_experiments/"
     check_buckets = [
-        os.path.join(s3_bucket_dists, "/".join(experiment.split("/")[experiment.split("/").index("supervised"):-1]),
+        os.path.join(s3_bucket_dists, "/".join(experiment.split("/")[experiment.split("/").index("rrna_kube_testing")+1:-1]),
                      "training_distributions") for experiment in experiments]
     for bucket in check_buckets:
         #     print(bucket)
@@ -124,7 +133,7 @@ def check_s3_training_distributions(client, experiments):
 
     s3_bucket_dists = "https://bailey-k8s.s3-us-west-2.amazonaws.com/rrna_experiments/"
     experiment_buckets = [
-        os.path.join(s3_bucket_dists, "/".join(experiment.split("/")[experiment.split("/").index("supervised"):-1]),
+        os.path.join(s3_bucket_dists, "/".join(experiment.split("/")[experiment.split("/").index("rrna_kube_testing")+1:-1]),
                      "training_distributions") for experiment in experiments]
     names = ["-".join(x.split("/")[-4:-1]) for x in experiment_buckets]
     return experiment_buckets, names
@@ -134,7 +143,7 @@ def create_html_file_for_mod(client, mod_title, mod_key, pos_list, experiment_bu
                              html_output_bucket="bailey-k8s/html/experiment_plotting_htmls/", overwrite=False):
     soup = BeautifulSoup("", 'html.parser')
     table = soup.new_tag("table")
-    table["style"] = "width:100%"
+    #     table["style"] = "width:100%"
     soup.insert(1, table)
 
     title = soup.new_tag("strong")
@@ -151,13 +160,32 @@ def create_html_file_for_mod(client, mod_title, mod_key, pos_list, experiment_bu
         table.insert(i, image_row)
         image_rows.append(image_row)
 
-#     print(experiment_buckets)
+    #     print(experiment_buckets)
     for i, bucket in enumerate(experiment_buckets):
         title_tag = soup.new_tag("th")
+        extra_rows = 0
         for z, row in enumerate(names[i].split("-")):
-            par_tag = soup.new_tag("p")
-            par_tag.string = row
-            title_tag.insert(z+1, par_tag)
+            if len(row) > 40:
+                split_row = row.split("_")
+                new_line = []
+                row_len = 0
+                counter = 0
+                for split_name in split_row:
+                    new_line += [split_name]
+                    row_len += len(split_name)
+                    if row_len > 30 or split_name == split_row[-1]:
+                        par_tag = soup.new_tag("p")
+                        par_tag.string = "_".join(new_line)
+                        title_tag.insert(z+1+extra_rows+counter, par_tag)
+                        new_line = []
+                        row_len = 0
+                        counter += 1
+                extra_rows += (counter - 1)
+            else:
+                par_tag = soup.new_tag("p")
+                par_tag.string = row
+                title_tag.insert(z+1+extra_rows, par_tag)
+
         #         title_tag.string = names[i]
         title_row.insert(i + 1, title_tag)
         for j, pos in enumerate(pos_list):
@@ -176,8 +204,8 @@ def create_html_file_for_mod(client, mod_title, mod_key, pos_list, experiment_bu
 
     with open("output.html", "w") as fh:
         print(soup.prettify(), file=fh)
-    #     print(soup.prettify())
-    out_file_name = "_".join(names + [mod_key]) + ".html"
+    #         print(soup.prettify())
+    out_file_name = "_".join([str(hash("_".join(names))), mod_key]) + ".html"
     s3_file = os.path.join(html_output_bucket, out_file_name)
     if not client.object_exists(s3_file) or overwrite:
         _ = client.upload_object(file_path="output.html", destination=s3_file, use_original_name=False,
@@ -214,15 +242,23 @@ def create_html_distributions(experiments, plot_df, client=None, overwrite=False
 
 
 def plot_acc_heatmap_for_experiment(dirs, key, kpm, min_percent=90, max_percent=100, max_delta=np.inf, min_delta=6,
-                                    round_n=30, show_numbers=True, client=None, overwrite=False):
+                                    round_n=30, show_numbers=True, client=None, overwrite=False, savefig=None,
+                                    cmap="viridis", norm=None):
     experiments = find_experiments(dirs)
     if not isinstance(round_n, list):
         round_n = [round_n for i in range(len(experiments))]
     assert len(round_n) == len(experiments), f"len(round_n) != len(experiments): {len(round_n)} != {len(experiments)}"
     final_data_frame = get_acc_data_from_experiments(experiments, key, round_n, kpm)
+    print(f"Got final_data_frame: len={len(final_data_frame)}")
     plot_df = final_data_frame[(final_data_frame["percent"] >= min_percent) &
                                (final_data_frame["percent"] <= max_percent) &
                                (final_data_frame["delta"] >= min_delta) &
                                (final_data_frame["delta"] <= max_delta)]
+    print(f"Got plot_df: len={len(plot_df)}")
     mod_s3_urls = create_html_distributions(experiments, plot_df, client=client, overwrite=overwrite)
-    plot_heatmap_of_experiment(plot_df, key, mod_s3_urls, show_numbers=show_numbers)
+    if mod_s3_urls is not None:
+        print(f"Got mod_s3_urls: len={len(mod_s3_urls)}")
+    else:
+        print("No mod_s3_urls")
+    plot_heatmap_of_experiment(plot_df, key, mod_s3_urls, show_numbers=show_numbers, savefig=savefig, cmap=cmap,
+                               norm=norm)

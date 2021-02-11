@@ -169,7 +169,12 @@ def plot_kmer_gif(pos_hist_data, hmm_models, output_file, strand="t", mod_only=F
                     # plot ont normal distribution
                     model_x = np.linspace(normal_mean - 4 * normal_sd, normal_mean + 4 * normal_sd, 200)
                     model_y = norm.pdf(model_x, normal_mean, normal_sd)
-
+                    # plot HDP distribution
+                    if model.has_hdp_model:
+                        model_x = model.linspace
+                        kmer_id = model.get_kmer_index(pos_kmer)
+                        model_y = model.all_posterior_pred[kmer_id]
+                        model_name = f"{model.name} HDP: {'_'.join([nuc_type, strand, pos_kmer])} "
                     tmp_min_x = normal_mean - (5 * normal_sd)
                     tmp_max_x = normal_mean + (5 * normal_sd)
                     if min_x > tmp_min_x:

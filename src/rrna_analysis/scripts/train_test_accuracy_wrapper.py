@@ -15,7 +15,7 @@ from argparse import ArgumentParser
 from itertools import zip_longest
 from subprocess import check_call
 
-from py3helpers.utils import list_dir, load_json, create_dot_dict
+from py3helpers.utils import list_dir, load_json, create_dot_dict, list_dir_recursive
 from rrna_analysis.scripts.re_run_signalalign import re_run_signalalign
 from rrna_analysis.scripts.run_embed_plot_wrapper import run_embed_plot_wrapper
 from signalalign.visualization.plot_multiple_variant_accuracy import plot_multiple_variant_accuracy
@@ -49,7 +49,7 @@ def parse_args():
     return args
 
 
-def re_run_plot_variant_accuracy(output_dir, testing_dir, positions_files, names, suffixes, threshold=0.5):
+def re_run_plot_variant_accuracy(output_dir, testing_dir, positions_files, names, suffixes, threshold=0.5, plot=True):
     assert os.path.isdir(testing_dir), "testing_dir does not exist: {}".format(testing_dir)
     assert os.path.isdir(output_dir), "output_dir does not exist: {}".format(output_dir)
     dirs = [os.path.join(testing_dir, x) for x in os.listdir(testing_dir) if not x.endswith("created_models")]
@@ -67,7 +67,7 @@ def re_run_plot_variant_accuracy(output_dir, testing_dir, positions_files, names
             samples.append({"name": name,
                             "variant_csv": os.path.join(testing_dir, suffix),
                             "positions_file": positions_file})
-        plot_multiple_variant_accuracy(test_output_dir, samples, threshold)
+        plot_multiple_variant_accuracy(test_output_dir, samples, threshold, plot=plot)
 
 
 def copy_variant_call_files(testing_dir, suffixes, output_dir):
@@ -83,6 +83,15 @@ def copy_variant_call_files(testing_dir, suffixes, output_dir):
 def get_trailing_number(s):
     m = re.search(r'\d+$', s)
     return int(m.group()) if m else None
+
+
+
+def get_hdp_models(top_dir):
+    """Grab all paths to hdp files within sub directories
+    :param top_dir: path to top search directory
+    """
+    paths = [x for x in list_dir_recursive(top_dir, "nhdp")]
+    return paths
 
 
 def main():
@@ -155,6 +164,9 @@ def main():
             shutil.copy2(os.path.join(training_dir,
                                       "tempFiles_trainModels_{}/template_hmm{}.model".format(i, i)),
                          training_model_dir)
+        for hdp_path in get_hdp_models(training_dir):
+            shutil.copy2(hdp_path,
+                         training_model_dir)
 
     if config_dict.options["test"]:
         print("TESTING", flush=True)
@@ -170,31 +182,34 @@ def main():
         copy_variant_call_files(testing_dir, suffixes, all_variant_calls)
 
     if config_dict.options["plot_accuracies"]:
-        print("PLOTTING ACCURACIES:TEST", flush=True)
-        # plot accuracies
-        positions_files = config_dict.plot_accuracies.test["positions_files"]
-        names = config_dict.plot_accuracies.test["names"]
-        suffixes = ["variant_calls/{}.csv".format(name) for name in names]
-        re_run_plot_variant_accuracy(testing_accuracy_dir, testing_dir, positions_files, names, suffixes, threshold=0.5)
-        # copy into one directory
-        print("COPYING ACCURACY DATA:TEST", flush=True)
-        for i in range(1, len(list_dir(training_model_dir))+1):
-            shutil.copy2(os.path.join(testing_accuracy_dir,
-                                      "template_hmm{}/per_position/per_position_data_0.5.csv".format(i)),
-                         os.path.join(testing_accuracy_csvs_dir, "{}_per_position_data_0.5.csv".format(i)))
+        plot = True
+    print("PLOTTING ACCURACIES:TEST", flush=True)
+    # plot accuracies
+    positions_files = config_dict.plot_accuracies.test["positions_files"]
+    names = config_dict.plot_accuracies.test["names"]
+    suffixes = ["variant_calls/{}.csv".format(name) for name in names]
+    re_run_plot_variant_accuracy(testing_accuracy_dir, testing_dir, positions_files, names, suffixes,
+                                 threshold=0.5, plot=plot)
+    # copy into one directory
+    print("COPYING ACCURACY DATA:TEST", flush=True)
+    for i in range(1, len(list_dir(training_model_dir))+1):
+        shutil.copy2(os.path.join(testing_accuracy_dir,
+                                  "template_hmm{}/per_position/per_position_data_0.5.csv".format(i)),
+                     os.path.join(testing_accuracy_csvs_dir, "{}_per_position_data_0.5.csv".format(i)))
 
-        print("PLOTTING ACCURACIES:TRAIN", flush=True)
-        # plot accuracies
-        positions_files = config_dict.plot_accuracies.train["positions_files"]
-        names = config_dict.plot_accuracies.train["names"]
-        suffixes = ["variant_calls/{}.csv".format(name) for name in names]
-        re_run_plot_variant_accuracy(training_accuracy_dir, testing_dir, positions_files, names, suffixes, threshold=0.5)
-        # copy into one directory
-        print("COPYING ACCURACY DATA:TRAIN", flush=True)
-        for i in range(1, len(list_dir(training_model_dir))+1):
-            shutil.copy2(os.path.join(training_accuracy_dir,
-                                      "template_hmm{}/per_position/per_position_data_0.5.csv".format(i)),
-                         os.path.join(training_accuracy_csvs_dir, "{}_per_position_data_0.5.csv".format(i)))
+    print("PLOTTING ACCURACIES:TRAIN", flush=True)
+    # plot accuracies
+    positions_files = config_dict.plot_accuracies.train["positions_files"]
+    names = config_dict.plot_accuracies.train["names"]
+    suffixes = ["variant_calls/{}.csv".format(name) for name in names]
+    re_run_plot_variant_accuracy(training_accuracy_dir, testing_dir, positions_files, names, suffixes,
+                                 threshold=0.5, plot=plot)
+    # copy into one directory
+    print("COPYING ACCURACY DATA:TRAIN", flush=True)
+    for i in range(1, len(list_dir(training_model_dir))+1):
+        shutil.copy2(os.path.join(training_accuracy_dir,
+                                  "template_hmm{}/per_position/per_position_data_0.5.csv".format(i)),
+                     os.path.join(training_accuracy_csvs_dir, "{}_per_position_data_0.5.csv".format(i)))
 
     if config_dict.options["plot_distributions"]:
         print("PLOTTING DISTRIBUTIONS", flush=True)
@@ -213,16 +228,42 @@ def main():
             if number is None:
                 hmm_model0 = list_dir(directory, ext="hmm")[0]
                 hmm_model1 = list_dir(directory, ext="model")[0]
+                hdp_model1 = list_dir(directory, ext="nhdp")
+                if len(hdp_model1) == 1:
+                    hdp_model1 = hdp_model1[0]
+                elif len(hdp_model1) == 2:
+                    print("HEY FIGURE OUT HOW TO DEAL WITH THIS DUDE!")
+                    print(hdp_model1)
+                    hdp_model1 = None
+                else:
+                    hdp_model1 = None
                 sa_output_dirs = [os.path.join(directory, x) for x in os.listdir(directory) if os.path.isdir(os.path.join(directory, x))]
-                iterations.append({"name": "iteration0", "hmm_model": hmm_model0, "hdp_model": None, "sa_output_dirs": sa_output_dirs})
-                iterations.append({"name": "iteration1", "hmm_model": hmm_model1, "hdp_model": None, "sa_output_dirs": sa_output_dirs})
+                iterations.append({"name": "iteration0",
+                                   "hmm_model": hmm_model0,
+                                   "hdp_model": None,
+                                   "sa_output_dirs": sa_output_dirs})
+
+                iterations.append({"name": "iteration1",
+                                   "hmm_model": hmm_model1,
+                                   "hdp_model": hdp_model1,
+                                   "sa_output_dirs": sa_output_dirs})
             else:
                 name = "iteration{}".format(number)
                 hmm_model = list_dir(directory, ext="model")
+                hdp_model = list_dir(directory, ext="nhdp")
+                if len(hdp_model) == 1:
+                    hdp_model = hdp_model[0]
+                else:
+                    hdp_model = None
+
                 if len(hmm_model) == 1:
                     hmm_model = hmm_model[0]
-                    sa_output_dirs = [os.path.join(directory, x) for x in os.listdir(directory) if os.path.isdir(os.path.join(directory, x))]
-                    iterations.append({"name": name, "hmm_model": hmm_model, "hdp_model": None, "sa_output_dirs": sa_output_dirs})
+                    sa_output_dirs = [os.path.join(directory, x) for x in os.listdir(directory) if
+                                      os.path.isdir(os.path.join(directory, x))]
+                    iterations.append({"name": name,
+                                       "hmm_model": hmm_model,
+                                       "hdp_model": hdp_model,
+                                       "sa_output_dirs": sa_output_dirs})
 
         model_json["iterations"] = iterations
         run_embed_plot_wrapper(model_json)

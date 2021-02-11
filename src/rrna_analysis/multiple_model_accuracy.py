@@ -74,6 +74,8 @@ def preprocess_accuracy_csv(path, mod_data):
                                  (~accuracy_csv.variants.isin(["Tl"])))
     accuracy_csv["in_unknown"] = (accuracy_csv["in_pseudo"] | accuracy_csv["in_2prime"])
     accuracy_csv = pd.merge(accuracy_csv, mod_data, on=["contig", "reference_index"])
+    accuracy_csv["fraction"] = accuracy_csv["percent"] / 100
+    accuracy_csv["recall-frac"] = accuracy_csv["recall"] - accuracy_csv["fraction"]
     return accuracy_csv
 
 
