@@ -91,11 +91,10 @@ def get_covered_kmers(reference_handler: ReferenceHandler, chromosome_name: str,
     for pos, chars in zip(pos, variant_chars):
         c_base = sequence[kmer_length - 1 + (pos - min_pos)]
         c_rep = canonical_replacement[c_base]
-        assert c_rep in chars or c_base in chars, \
-            "Reference base is not in variant characters: pos{}:{} not in {}".format(pos,
-                                                                                     sequence[kmer_length - 1 + (
-                                                                                             pos - min_pos)],
-                                                                                     chars)
+        if len(chars) > 1:
+            assert c_rep in chars or c_base in chars, \
+                f"Reference base is not in variant characters: pos{pos}:{c_base} not in {chars} " \
+                f"and pos{pos}:{c_rep} not in {chars}"
         sequence[kmer_length - 1 + (pos - min_pos)] = chars
     if rna:
         sequence = sequence[::-1]
@@ -113,13 +112,15 @@ def get_covered_kmers(reference_handler: ReferenceHandler, chromosome_name: str,
 class KmerPosMapping(object):
     contig_strand_position = namedtuple('contig_strand_position', ['contig', 'strand', 'position'])
 
-    def __init__(self, reference, positions, mods_csv, kmer_length=5):
+    def __init__(self, reference, positions, mods_csv, kmer_length=5,
+                 canonical_replacement={"A": "n", "T": 'q', "G": "p", "C": "o"}):
         assert os.path.exists(reference), f"reference path does not exist:{reference}"
         assert os.path.exists(positions), f"positions path does not exist:{positions}"
         assert os.path.exists(mods_csv), f"mods_csv path does not exist:{mods_csv}"
         self.reference = reference
         self.positions = positions
         self.mods_csv = mods_csv
+        self.canonical_replacement = canonical_replacement
         self.mod_data = self.read_in_mod_data(self.mods_csv)
         self.subset_mod_data = self.mod_data[["contig", "reference_index", "percent"]]
         self.kmer_length = kmer_length
@@ -238,11 +239,11 @@ class KmerPosMapping(object):
 
     def _update_kmer_pos_maps(self, contig, strand, all_pos, all_variant_bases):
         kmers = get_covered_kmers(self.ref_handler, contig, strand, all_pos, all_variant_bases,
-                                  self.rna, self.kmer_length)
+                                  self.rna, self.kmer_length, canonical_replacement=self.canonical_replacement)
         for i, p in enumerate(range(min(all_pos) - (self.kmer_length - 1), max(all_pos) + 1)):
             csp = self.contig_strand_position(contig=contig, strand=strand, position=p)
             self.pos_2_kmers[csp] = self.pos_2_kmers[csp] | kmers[i]
-            for k in kmers[i]:
+            for k in self.pos_2_kmers[csp]:
                 self.kmer_2_pos[k].append(csp)
 
         for i, p in enumerate(all_pos):

@@ -56,7 +56,7 @@ def get_kmer_mean_delta(model, kmer1, kmer2):
 
 
 def preprocess_accuracy_csv(path, mod_data):
-    assert (os.path.exists(path))
+    assert (os.path.exists(path)), f"Path does not exist: {path}"
     accuracy_csv = pd.read_csv(path).sort_values(by=['contig', 'reference_index'])
 
     accuracy_csv['delta1'] = accuracy_csv.reference_index.diff().shift(-1)

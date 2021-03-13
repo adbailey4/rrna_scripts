@@ -7,6 +7,8 @@
 # Author: Andrew Bailey
 # History: Created 12/10/20
 ########################################################################
+import matplotlib
+matplotlib.use('SVG')
 
 import os
 import re
@@ -23,9 +25,9 @@ from rrna_analysis.multiple_model_accuracy import sort_dir, \
     preprocess_accuracy_csv
 from rrna_analysis.kmer_pos_mapping import KmerPosMapping
 
-from IPython.display import set_matplotlib_formats
-
-set_matplotlib_formats('svg')
+# from IPython.display import set_matplotlib_formats
+#
+# set_matplotlib_formats('svg')
 
 
 def find_experiments(top_dirs):
@@ -116,7 +118,7 @@ def plot_heatmap_of_experiment(plot_df, key, urls=None, show_numbers=True, savef
     ax.set_title("Data")
     # option to save figure or just show it
     if savefig is not None:
-        plt.savefig(savefig)
+        plt.savefig(savefig, dpi=300)
     else:
         plt.show()
     plt.close(fig)
