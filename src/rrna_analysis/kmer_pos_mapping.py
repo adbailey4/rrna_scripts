@@ -161,39 +161,75 @@ class KmerPosMapping(object):
                                               "delta4_above"]].min(axis=1)
 
         all_pos_data["in_2prime"] = (((all_pos_data.change_to.shift(1).isin(["Aa", "Cb", "Gc", "Td", "Tdm"]) &
-                                       (all_pos_data.delta1_below <= 5)) |
+                                       (all_pos_data.delta1_below <= self.kmer_length)) |
                                       (all_pos_data.change_to.shift(-1).isin(["Aa", "Cb", "Gc", "Td", "Tdm"]) &
-                                       (all_pos_data.delta1_above <= 5)) |
+                                       (all_pos_data.delta1_above <= self.kmer_length)) |
                                       (all_pos_data.change_to.shift(2).isin(["Aa", "Cb", "Gc", "Td", "Tdm"]) &
-                                       (all_pos_data.delta2_below <= 5)) |
+                                       (all_pos_data.delta2_below <= self.kmer_length)) |
                                       (all_pos_data.change_to.shift(-2).isin(["Aa", "Cb", "Gc", "Td", "Tdm"]) &
-                                       (all_pos_data.delta2_above <= 5)) |
+                                       (all_pos_data.delta2_above <= self.kmer_length)) |
                                       (all_pos_data.change_to.shift(3).isin(["Aa", "Cb", "Gc", "Td", "Tdm"]) &
-                                       (all_pos_data.delta3_below <= 5)) |
+                                       (all_pos_data.delta3_below <= self.kmer_length)) |
                                       (all_pos_data.change_to.shift(-3).isin(["Aa", "Cb", "Gc", "Td", "Tdm"]) &
-                                       (all_pos_data.delta3_above <= 5)) |
+                                       (all_pos_data.delta3_above <= self.kmer_length)) |
                                       (all_pos_data.change_to.shift(4).isin(["Aa", "Cb", "Gc", "Td", "Tdm"]) &
-                                       (all_pos_data.delta4_below <= 5)) |
+                                       (all_pos_data.delta4_below <= self.kmer_length)) |
                                       (all_pos_data.change_to.shift(-4).isin(["Aa", "Cb", "Gc", "Td", "Tdm"]) &
-                                       (all_pos_data.delta4_above <= 5))
-                                      ) & (~all_pos_data.change_to.isin(["Aa", "Cb", "Gc", "Td"])))
-        all_pos_data["in_pseudo"] = (((all_pos_data.change_to.shift(1).isin(["Tl", "Tdm"]) &
-                                       (all_pos_data.delta1_below <= 5)) |
-                                      (all_pos_data.change_to.shift(-1).isin(["Tl", "Tdm"]) &
-                                       (all_pos_data.delta1_above <= 5)) |
-                                      (all_pos_data.change_to.shift(2).isin(["Tl", "Tdm"]) &
-                                       (all_pos_data.delta2_below <= 5)) |
-                                      (all_pos_data.change_to.shift(-2).isin(["Tl", "Tdm"]) &
-                                       (all_pos_data.delta2_above <= 5)) |
-                                      (all_pos_data.change_to.shift(3).isin(["Tl", "Tdm"]) &
-                                       (all_pos_data.delta3_below <= 5)) |
-                                      (all_pos_data.change_to.shift(-3).isin(["Tl", "Tdm"]) &
-                                       (all_pos_data.delta3_above <= 5)) |
-                                      (all_pos_data.change_to.shift(4).isin(["Tl", "Tdm"]) &
-                                       (all_pos_data.delta4_below <= 5)) |
-                                      (all_pos_data.change_to.shift(-4).isin(["Tl", "Tdm"]) &
-                                       (all_pos_data.delta4_above <= 5))
-                                      ) & (~all_pos_data.change_to.isin(["Tl", "Tdm"])))
+                                       (all_pos_data.delta4_above <= self.kmer_length))
+                                      ) & (~all_pos_data.change_to.isin(["Aa", "Cb", "Gc", "Td", "Tdm"])))
+        all_pos_data["in_pseudo"] = (((all_pos_data.change_to.shift(1).isin(["Tl"]) &
+                                       (all_pos_data.delta1_below <= self.kmer_length)) |
+                                      (all_pos_data.change_to.shift(-1).isin(["Tl"]) &
+                                       (all_pos_data.delta1_above <= self.kmer_length)) |
+                                      (all_pos_data.change_to.shift(2).isin(["Tl"]) &
+                                       (all_pos_data.delta2_below <= self.kmer_length)) |
+                                      (all_pos_data.change_to.shift(-2).isin(["Tl"]) &
+                                       (all_pos_data.delta2_above <= self.kmer_length)) |
+                                      (all_pos_data.change_to.shift(3).isin(["Tl"]) &
+                                       (all_pos_data.delta3_below <= self.kmer_length)) |
+                                      (all_pos_data.change_to.shift(-3).isin(["Tl"]) &
+                                       (all_pos_data.delta3_above <= self.kmer_length)) |
+                                      (all_pos_data.change_to.shift(4).isin(["Tl"]) &
+                                       (all_pos_data.delta4_below <= self.kmer_length)) |
+                                      (all_pos_data.change_to.shift(-4).isin(["Tl"]) &
+                                       (all_pos_data.delta4_above <= self.kmer_length))
+                                      ) & (~all_pos_data.change_to.isin(["Tl"])))
+
+        all_pos_data["pseudo_in_other"] = (((~all_pos_data.change_to.shift(1).isin(["Tl"]) &
+                                             (all_pos_data.delta1_below <= self.kmer_length)) |
+                                            (~all_pos_data.change_to.shift(-1).isin(["Tl"]) &
+                                             (all_pos_data.delta1_above <= self.kmer_length)) |
+                                            (~all_pos_data.change_to.shift(2).isin(["Tl"]) &
+                                             (all_pos_data.delta2_below <= self.kmer_length)) |
+                                            (~all_pos_data.change_to.shift(-2).isin(["Tl"]) &
+                                             (all_pos_data.delta2_above <= self.kmer_length)) |
+                                            (~all_pos_data.change_to.shift(3).isin(["Tl"]) &
+                                             (all_pos_data.delta3_below <= self.kmer_length)) |
+                                            (~all_pos_data.change_to.shift(-3).isin(["Tl"]) &
+                                             (all_pos_data.delta3_above <= self.kmer_length)) |
+                                            (~all_pos_data.change_to.shift(4).isin(["Tl"]) &
+                                             (all_pos_data.delta4_below <= self.kmer_length)) |
+                                            (~all_pos_data.change_to.shift(-4).isin(["Tl"]) &
+                                             (all_pos_data.delta4_above <= self.kmer_length))
+                                            ) & (all_pos_data.change_to.isin(["Tl"])))
+
+        all_pos_data["2prime_in_other"] = (((~all_pos_data.change_to.shift(1).isin(["Aa", "Cb", "Gc", "Td", "Tdm"]) &
+                                             (all_pos_data.delta1_below <= self.kmer_length)) |
+                                            (~all_pos_data.change_to.shift(-1).isin(["Aa", "Cb", "Gc", "Td", "Tdm"]) &
+                                             (all_pos_data.delta1_above <= self.kmer_length)) |
+                                            (~all_pos_data.change_to.shift(2).isin(["Aa", "Cb", "Gc", "Td", "Tdm"]) &
+                                             (all_pos_data.delta2_below <= self.kmer_length)) |
+                                            (~all_pos_data.change_to.shift(-2).isin(["Aa", "Cb", "Gc", "Td", "Tdm"]) &
+                                             (all_pos_data.delta2_above <= self.kmer_length)) |
+                                            (~all_pos_data.change_to.shift(3).isin(["Aa", "Cb", "Gc", "Td", "Tdm"]) &
+                                             (all_pos_data.delta3_below <= self.kmer_length)) |
+                                            (~all_pos_data.change_to.shift(-3).isin(["Aa", "Cb", "Gc", "Td", "Tdm"]) &
+                                             (all_pos_data.delta3_above <= self.kmer_length)) |
+                                            (~all_pos_data.change_to.shift(4).isin(["Aa", "Cb", "Gc", "Td", "Tdm"]) &
+                                             (all_pos_data.delta4_below <= self.kmer_length)) |
+                                            (~all_pos_data.change_to.shift(-4).isin(["Aa", "Cb", "Gc", "Td", "Tdm"]) &
+                                             (all_pos_data.delta4_above <= self.kmer_length))
+                                            ) & (all_pos_data.change_to.isin(["Aa", "Cb", "Gc", "Td", "Tdm"])))
 
         all_pos_data["in_unknown"] = (all_pos_data["in_pseudo"] | all_pos_data["in_2prime"])
         return all_pos_data

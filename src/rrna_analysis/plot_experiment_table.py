@@ -80,7 +80,7 @@ def plot_heatmap_of_experiment(plot_df, key, urls=None, show_numbers=True, savef
                    'pos', 'percent', 'reference_index', 'delta1_below', 'delta1_above',
                    'delta2_below', 'delta2_above', 'delta3_below', 'delta3_above',
                    'delta4_below', 'delta4_above', 'delta', 'in_2prime', 'in_pseudo',
-                   'in_unknown']
+                   'in_unknown', "pseudo_in_other", "2prime_in_other"]
     x_labels = [x for x in plot_df.columns if x not in not_columns]
     y_labels = ["_".join([str(x) for x in plot_df[["contig", "reference_index"]].loc[i]]) for i in plot_df.index]
     data = plot_df[x_labels]
