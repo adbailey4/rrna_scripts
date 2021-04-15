@@ -170,6 +170,8 @@ def main():
     args = parse_args()
     print("Align and filter BAM")
     out_bam, filtered_sorted_bam = align_and_filter(args.fastq, args.reference, threads=args.threads)
+    if not os.path.exists(args.output_dir):
+        os.mkdir(args.output_dir)
     outpath = os.path.join(args.output_dir, "signalalign_output")
     if not os.path.exists(outpath):
         os.mkdir(outpath)
@@ -180,7 +182,7 @@ def main():
 
     if args.seq_summary is not None:
         print("pycoQC")
-        html = os.path.join(outpath , name + ".html")
+        html = os.path.join(outpath, name + ".html")
         run_qc(args.seq_summary, out_bam, html)
 
     print("Split and Index Fast5s")
