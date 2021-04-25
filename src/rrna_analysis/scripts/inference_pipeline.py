@@ -12,8 +12,10 @@ import os
 from argparse import ArgumentParser
 from subprocess import check_call, Popen, check_output, PIPE
 import urllib.request
+from pathlib import Path
+import shutil
 
-from py3helpers.utils import list_dir, load_json, time_it, save_json
+from py3helpers.utils import list_dir, load_json, time_it, save_json, list_dir_recursive
 
 
 def parse_args():
@@ -41,11 +43,8 @@ def parse_args():
                         dest='seq_summary', required=False, type=str, default=None,
                         help="Path to sequence summary file")
     parser.add_argument('--name', action='store',
-                        dest='name', required=False, type=str, default=None,
+                        dest='name', required=True, type=str,
                         help="Name of experiment")
-    parser.add_argument('--tombo', action='store_true',
-                        dest='tombo', required=False, default=False,
-                        help="Run tombo or not")
 
     args = parser.parse_args()
     return args
@@ -71,14 +70,6 @@ def align_and_filter(fastq, reference, threads=1):
     assert rcode == 0, "Return code is not 0, check input paths and if both minimap2 and samtools are installed"
     check_call(f"samtools index -@ {threads} {filtered_sorted_bam}".split())
     return out_bam, filtered_sorted_bam
-
-
-def run_tombo(split_fast5, fastq, reference, threads=1):
-    command = f"tombo preprocess annotate_raw_with_fastqs --fast5-basedir {split_fast5} " \
-              f"--fastq-filenames {fastq} --processes {threads}"
-    check_call(command.split())
-    command = f"tombo resquiggle {split_fast5} {reference} --processes {threads} --num-most-common-errors 5 --rna --overwrite"
-    check_call(command.split())
 
 
 def run_qc(seq_summary, bam, html):
@@ -177,19 +168,32 @@ def index_reads(directory, fastq):
     return readdb_file
 
 
+def concat_fastq_files(list_of_paths, output_file_path):
+    """Concat all fastq files together"""
+    with open(output_file_path, 'wb') as wfd:
+        for f in list_of_paths:
+            with open(f, 'rb') as fd:
+                shutil.copyfileobj(fd, wfd)
+    return output_file_path
+
+
 def main():
     args = parse_args()
     print("Align and filter BAM")
-    out_bam, filtered_sorted_bam = align_and_filter(args.fastq, args.reference, threads=args.threads)
-    if not os.path.exists(args.output_dir):
-        os.mkdir(args.output_dir)
-    outpath = os.path.join(args.output_dir, "signalalign_output")
+    output_dir = Path(args.output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    name = args.name
+    if os.path.isdir(args.fastq):
+        fastqs = [x for x in list_dir_recursive(args.fastq, ext="fastq")]
+        output_file_path = os.path.join(output_dir, args.name)
+        # assert len(fastqs) >= 1, f"No fastqs found in {args.fastq}"
+        fastq = concat_fastq_files(fastqs, output_file_path)
+    else:
+        fastq = args.fastq
+    out_bam, filtered_sorted_bam = align_and_filter(fastq, args.reference, threads=args.threads)
+    outpath = os.path.join(output_dir, "signalalign_output")
     if not os.path.exists(outpath):
         os.mkdir(outpath)
-    if args.name is None:
-        name = os.path.splitext(os.path.split(filtered_sorted_bam)[1])[0]
-    else:
-        name = args.name
 
     if args.seq_summary is not None:
         print("pycoQC")
@@ -201,11 +205,7 @@ def main():
     if not os.path.exists(split_fast5s_path):
         os.mkdir(split_fast5s_path)
     split_fast5s(args.fast5, split_fast5s_path, threads=args.threads)
-    readdb_path = index_reads(split_fast5s_path, args.fastq)
-
-    if args.tombo:
-        print("Running SignalAlign")
-        run_tombo(split_fast5s_path, args.fastq, args.reference, threads=args.threads)
+    readdb_path = index_reads(split_fast5s_path, fastq)
 
     print("Running SignalAlign")
     run_config_dict = create_config(outpath, filtered_sorted_bam, name, args.path_to_bin, readdb_path,
@@ -224,4 +224,5 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    ret, time = (time_it(main))
+    print(f"Running Time: {time} s")
