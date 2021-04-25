@@ -43,6 +43,9 @@ def parse_args():
     parser.add_argument('--name', action='store',
                         dest='name', required=False, type=str, default=None,
                         help="Name of experiment")
+    parser.add_argument('--tombo', action='store_true',
+                        dest='tombo', required=False, default=False,
+                        help="Run tombo or not")
 
     args = parser.parse_args()
     return args
@@ -68,6 +71,14 @@ def align_and_filter(fastq, reference, threads=1):
     assert rcode == 0, "Return code is not 0, check input paths and if both minimap2 and samtools are installed"
     check_call(f"samtools index -@ {threads} {filtered_sorted_bam}".split())
     return out_bam, filtered_sorted_bam
+
+
+def run_tombo(split_fast5, fastq, reference, threads=1):
+    command = f"tombo preprocess annotate_raw_with_fastqs --fast5-basedir {split_fast5} " \
+              f"--fastq-filenames {fastq} --processes {threads}"
+    check_call(command.split())
+    command = f"tombo resquiggle {split_fast5} {reference} --processes {threads} --num-most-common-errors 5 --rna --overwrite"
+    check_call(command.split())
 
 
 def run_qc(seq_summary, bam, html):
@@ -155,8 +166,8 @@ def create_config(outpath, bam, name, path_to_bin, readdb, fast5_dir, threads=1)
 
 
 def split_fast5s(fast5_dir, output_dir, threads=1):
-    check_call(f"split_multi_fast5.py --jobs {threads} "
-               f"--multi_fast5_dir {fast5_dir} --output_dir {output_dir}".split())
+    check_call(f"multi_to_single_fast5 --t {threads} "
+               f"--input_path {fast5_dir} --save_path {output_dir}".split())
 
 
 def index_reads(directory, fastq):
@@ -191,6 +202,11 @@ def main():
         os.mkdir(split_fast5s_path)
     split_fast5s(args.fast5, split_fast5s_path, threads=args.threads)
     readdb_path = index_reads(split_fast5s_path, args.fastq)
+
+    if args.tombo:
+        print("Running SignalAlign")
+        run_tombo(split_fast5s_path, args.fastq, args.reference, threads=args.threads)
+
     print("Running SignalAlign")
     run_config_dict = create_config(outpath, filtered_sorted_bam, name, args.path_to_bin, readdb_path,
                                     split_fast5s_path,
