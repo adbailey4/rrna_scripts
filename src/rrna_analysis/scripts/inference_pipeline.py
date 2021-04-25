@@ -185,8 +185,8 @@ def main():
     name = args.name
     if os.path.isdir(args.fastq):
         fastqs = [x for x in list_dir_recursive(args.fastq, ext="fastq")]
-        output_file_path = os.path.join(output_dir, args.name)
-        # assert len(fastqs) >= 1, f"No fastqs found in {args.fastq}"
+        output_file_path = os.path.join(output_dir, args.name+".fastq")
+        assert len(fastqs) >= 1, f"No fastqs found in {args.fastq}"
         fastq = concat_fastq_files(fastqs, output_file_path)
     else:
         fastq = args.fastq
@@ -197,7 +197,7 @@ def main():
 
     if args.seq_summary is not None:
         print("pycoQC")
-        html = os.path.join(outpath, name + ".html")
+        html = os.path.join(output_dir, name + ".html")
         run_qc(args.seq_summary, out_bam, html)
 
     print("Split and Index Fast5s")
