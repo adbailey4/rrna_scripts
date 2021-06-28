@@ -99,26 +99,38 @@ def main():
     print("Align and filter BAM")
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
+    output_dir2 = Path(os.path.join(args.output_dir, args.name))
+    output_dir2.mkdir(parents=True, exist_ok=True)
     name = args.name
+    # split fast55 paths
+    split5_outpath = Path(os.path.join(output_dir, "tombo_output"))
+    split5_outpath.mkdir(parents=True, exist_ok=True)
+
     if os.path.isdir(args.fastq):
         fastqs = [x for x in list_dir_recursive(args.fastq, ext="fastq")]
-        output_file_path = os.path.join(output_dir, args.name + ".fastq")
+        output_file_path = os.path.join(split5_outpath, args.name + ".fastq")
         assert len(fastqs) >= 1, f"No fastqs found in {args.fastq}"
         fastq = concat_fastq_files(fastqs, output_file_path)
     else:
         fastq = args.fastq
     out_bam, filtered_sorted_bam = align_and_filter(fastq, args.reference, threads=args.threads)
-    outpath = os.path.join(output_dir, "tombo_output")
-    if not os.path.exists(outpath):
-        os.mkdir(outpath)
+    # move important bams
+    dir_path, file_name = os.path.split(filtered_sorted_bam)
+    bam_copy_path = os.path.join(output_dir2, file_name)
+    shutil.move(filtered_sorted_bam, bam_copy_path)
+    shutil.move(filtered_sorted_bam+".bai", bam_copy_path+".bai")
+    filtered_sorted_bam = bam_copy_path
 
     if args.seq_summary is not None:
         print("pycoQC")
-        html = os.path.join(output_dir, name + ".html")
-        run_qc(args.seq_summary, out_bam, html)
+        dir_path, file_name = os.path.split(args.seq_summary)
+        seq_summary_copy_path = os.path.join(output_dir2, f"{name}_{file_name}")
+        shutil.copyfile(args.seq_summary, seq_summary_copy_path)
+        html = os.path.join(output_dir2, name + ".html")
+        run_qc(seq_summary_copy_path, out_bam, html)
 
     print("Split Fast5s")
-    split_fast5s_path = os.path.join(outpath, "split_fast5s")
+    split_fast5s_path = os.path.join(split5_outpath, "split_fast5s")
     if not os.path.exists(split_fast5s_path):
         os.mkdir(split_fast5s_path)
     split_fast5s(args.fast5, split_fast5s_path, threads=args.threads)
@@ -130,9 +142,10 @@ def main():
     check_call(f"tombo resquiggle {split_fast5s_path} {args.reference} --processes {args.threads} "
                f"--num-most-common-errors 5 --rna --overwrite".split())
 
-    check_call(f"tombo detect_modifications level_sample_compare --fast5-basedirs {args.wt_split_fast5s}"
-               f"--alternate-fast5-basedirs {split_fast5s_path}"
-               f"--statistics-file-basename WT_vs_{name}.level_compare_sample --processes {args.threads}".split())
+    check_call(f"tombo detect_modifications level_sample_compare --fast5-basedirs {args.wt_split_fast5s} "
+               f"--alternate-fast5-basedirs {split_fast5s_path} "
+               f"--statistics-file-basename {os.path.join(output_dir2, f'WT_vs_{name}.level_compare_sample')} "
+               f"--processes {args.threads}".split())
 
 
 if __name__ == '__main__':
