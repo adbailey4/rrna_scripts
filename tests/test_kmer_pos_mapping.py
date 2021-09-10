@@ -23,14 +23,17 @@ class TestKmerPosMapping(unittest.TestCase):
         cls.test_mod_file = os.path.join(cls.HOME, "tests/test_files/test_mod_file.csv")
         cls.mod_file = os.path.join(cls.HOME, "tests/test_files/mod_file.csv")
         cls.pos_file = os.path.join(cls.HOME, "tests/test_files/yeast_18S_25S_variants.positions")
-
         cls.kpm = KmerPosMapping(cls.test_reference, cls.pos_file, cls.mod_file)
+
+        cls.alt_c_pos = os.path.join(cls.HOME, "tests/test_files/alt_c_yeast_18S_25S_variants.positions")
+        cls.alt_c_kpm = KmerPosMapping(cls.test_reference, cls.alt_c_pos, cls.mod_file)
 
     def test_create_mod_handler(self):
         self.assertSequenceEqual(list(self.kpm.create_mod_handler().columns),
                                  ['contig', 'position', 'strand', 'change_from', 'change_to', 'mod',
-                                  'pos', 'percent', 'reference_index', 'delta1', 'delta2', 'delta',
-                                  'in_2prime', 'in_pseudo', 'in_unknown'])
+                                  'pos', 'percent', 'reference_index', 'delta1_below', 'delta1_above', 'delta2_below',
+                                  'delta2_above', 'delta3_below', 'delta3_above', 'delta4_below', 'delta4_above',
+                                  'delta', 'in_2prime', 'in_pseudo', 'in_unknown'])
 
     def test_get_kmers_from_seq(self):
         kmers = get_kmers_from_seq("ATGCA", kmer_length=5)
@@ -72,6 +75,22 @@ class TestKmerPosMapping(unittest.TestCase):
                                  [self.kpm.contig_strand_position(contig="RDN18-1", strand="+", position=1190)])
         # csp = self.kpm.contig_strand_position(contig="RDN25-1", strand="+", position=648)
         # print(self.kpm.pos_2_covered_kmers[csp])
+
+    def test_alt_c_get_covered_bases(self):
+        csp = self.alt_c_kpm.contig_strand_position(contig="RDN18-1", strand="+", position=1186)
+        self.assertSetEqual(self.alt_c_kpm.pos_2_kmers[csp], {"TCAGT", 'qCAGl', 'gCAGq', 'qCAGq', 'gCAGl'})
+        self.assertSequenceEqual(self.alt_c_kpm.kmer_2_pos["gCAGl"], [csp])
+        self.assertSequenceEqual(self.alt_c_kpm.pos_2_covered_kmers[csp],
+                                 [{'lTTAA', 'qTTAA'},
+                                  {'GlTTA', 'GqTTA'},
+                                  {'AGlTT', 'AGqTT'},
+                                  {'CAGlT', 'CAGqT'},
+                                  {'qCAGl', 'gCAGq', 'qCAGq', 'gCAGl'}])
+        self.assertSequenceEqual(self.alt_c_kpm.pos_2_overlap_pos[csp],
+                                 [self.alt_c_kpm.contig_strand_position(contig="RDN18-1", strand="+", position=1190)])
+        # csp = self.kpm.contig_strand_position(contig="RDN25-1", strand="+", position=648)
+        # print(self.kpm.pos_2_covered_kmers[csp])
+
 
     def test_read_in_mod_data(self):
         mod_data = KmerPosMapping.read_in_mod_data(self.test_mod_file)

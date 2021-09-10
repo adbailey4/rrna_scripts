@@ -65,10 +65,13 @@ def get_kmer_permutations(bases: list):
 
 def get_covered_kmers(reference_handler: ReferenceHandler, chromosome_name: str, strand: str, pos: list,
                       variant_chars: list,
-                      rna: bool = False, kmer_length: int = 5) -> list:
+                      rna: bool = False,
+                      kmer_length: int = 5,
+                      canonical_replacement={"A": "n", "T": 'q', "G": "p", "C": "o"}) -> list:
     """Get a list of lists of kmers covering a certain position. The first list will always be canonical,
     any subsequent kmer lists are the same kmers with the specified position replaced with non
     reference characters
+    :param canonical_replacement: if there are replacement bases for canonical, observe those instead
     :param reference_handler: ReferenceHandler object
     :param chromosome_name: reference chromosome name
     :param strand: strand
@@ -86,11 +89,12 @@ def get_covered_kmers(reference_handler: ReferenceHandler, chromosome_name: str,
         sequence = reverse_complement(sequence)
     sequence = list(sequence)
     for pos, chars in zip(pos, variant_chars):
-        assert sequence[kmer_length - 1 + (pos - min_pos)] in chars, \
-            "Reference base is not in variant characters: pos{}:{} not in {}".format(pos,
-                                                                                     sequence[kmer_length - 1 + (
-                                                                                             pos - min_pos)],
-                                                                                     chars)
+        c_base = sequence[kmer_length - 1 + (pos - min_pos)]
+        c_rep = canonical_replacement[c_base]
+        if len(chars) > 1:
+            assert c_rep in chars or c_base in chars, \
+                f"Reference base is not in variant characters: pos{pos}:{c_base} not in {chars} " \
+                f"and pos{pos}:{c_rep} not in {chars}"
         sequence[kmer_length - 1 + (pos - min_pos)] = chars
     if rna:
         sequence = sequence[::-1]
@@ -108,13 +112,15 @@ def get_covered_kmers(reference_handler: ReferenceHandler, chromosome_name: str,
 class KmerPosMapping(object):
     contig_strand_position = namedtuple('contig_strand_position', ['contig', 'strand', 'position'])
 
-    def __init__(self, reference, positions, mods_csv, kmer_length=5):
+    def __init__(self, reference, positions, mods_csv, kmer_length=5,
+                 canonical_replacement={"A": "n", "T": 'q', "G": "p", "C": "o"}):
         assert os.path.exists(reference), f"reference path does not exist:{reference}"
         assert os.path.exists(positions), f"positions path does not exist:{positions}"
         assert os.path.exists(mods_csv), f"mods_csv path does not exist:{mods_csv}"
         self.reference = reference
         self.positions = positions
         self.mods_csv = mods_csv
+        self.canonical_replacement = canonical_replacement
         self.mod_data = self.read_in_mod_data(self.mods_csv)
         self.subset_mod_data = self.mod_data[["contig", "reference_index", "percent"]]
         self.kmer_length = kmer_length
@@ -134,19 +140,97 @@ class KmerPosMapping(object):
         all_pos_data = pd.merge(self.positions_data, self.mod_data, left_on=["contig", "strand", "position"],
                                 right_on=["contig", "strand", "reference_index"]).sort_values(by=['contig', 'position'])
 
-        all_pos_data['delta1'] = all_pos_data.reference_index.diff().shift(-1)
-        all_pos_data['delta2'] = np.abs(all_pos_data.reference_index.diff().shift(0))
-        all_pos_data['delta'] = all_pos_data[["delta1", "delta2"]].min(axis=1)
-        all_pos_data["in_2prime"] = (((all_pos_data.change_to.shift().isin(["Aa", "Cb", "Gc", "Td", "Tdm"]) &
-                                       (all_pos_data.delta2 <= 5)) |
+        all_pos_data['delta1_below'] = all_pos_data.reference_index.diff().shift(-1)
+        all_pos_data['delta1_below'] = np.abs(all_pos_data.reference_index.diff(periods=1))
+        all_pos_data['delta1_above'] = np.abs(all_pos_data.reference_index.diff(periods=-1))
+
+        all_pos_data['delta2_below'] = np.abs(all_pos_data.reference_index.diff(periods=2))
+        all_pos_data['delta2_above'] = np.abs(all_pos_data.reference_index.diff(periods=-2))
+        all_pos_data['delta3_below'] = np.abs(all_pos_data.reference_index.diff(periods=3))
+        all_pos_data['delta3_above'] = np.abs(all_pos_data.reference_index.diff(periods=-3))
+        all_pos_data['delta4_below'] = np.abs(all_pos_data.reference_index.diff(periods=4))
+        all_pos_data['delta4_above'] = np.abs(all_pos_data.reference_index.diff(periods=-4))
+
+        all_pos_data['delta'] = all_pos_data[["delta1_below",
+                                              "delta1_above",
+                                              "delta2_below",
+                                              "delta2_above",
+                                              "delta3_below",
+                                              "delta3_above",
+                                              "delta4_below",
+                                              "delta4_above"]].min(axis=1)
+
+        all_pos_data["in_2prime"] = (((all_pos_data.change_to.shift(1).isin(["Aa", "Cb", "Gc", "Td", "Tdm"]) &
+                                       (all_pos_data.delta1_below <= self.kmer_length)) |
                                       (all_pos_data.change_to.shift(-1).isin(["Aa", "Cb", "Gc", "Td", "Tdm"]) &
-                                       (all_pos_data.delta1 <= 5))) & (
-                                         ~all_pos_data.change_to.isin(["Aa", "Cb", "Gc", "Td"])))
-        all_pos_data["in_pseudo"] = (((all_pos_data.change_to.shift().isin(["Tl"]) &
-                                       (all_pos_data.delta2 <= 5)) |
-                                      (all_pos_data.change_to.shift(-1).isin(["Tl", "Tdm"]) &
-                                       (all_pos_data.delta1 <= 5))) &
-                                     (~all_pos_data.change_to.isin(["Tl"])))
+                                       (all_pos_data.delta1_above <= self.kmer_length)) |
+                                      (all_pos_data.change_to.shift(2).isin(["Aa", "Cb", "Gc", "Td", "Tdm"]) &
+                                       (all_pos_data.delta2_below <= self.kmer_length)) |
+                                      (all_pos_data.change_to.shift(-2).isin(["Aa", "Cb", "Gc", "Td", "Tdm"]) &
+                                       (all_pos_data.delta2_above <= self.kmer_length)) |
+                                      (all_pos_data.change_to.shift(3).isin(["Aa", "Cb", "Gc", "Td", "Tdm"]) &
+                                       (all_pos_data.delta3_below <= self.kmer_length)) |
+                                      (all_pos_data.change_to.shift(-3).isin(["Aa", "Cb", "Gc", "Td", "Tdm"]) &
+                                       (all_pos_data.delta3_above <= self.kmer_length)) |
+                                      (all_pos_data.change_to.shift(4).isin(["Aa", "Cb", "Gc", "Td", "Tdm"]) &
+                                       (all_pos_data.delta4_below <= self.kmer_length)) |
+                                      (all_pos_data.change_to.shift(-4).isin(["Aa", "Cb", "Gc", "Td", "Tdm"]) &
+                                       (all_pos_data.delta4_above <= self.kmer_length))
+                                      ) & (~all_pos_data.change_to.isin(["Aa", "Cb", "Gc", "Td", "Tdm"])))
+        all_pos_data["in_pseudo"] = (((all_pos_data.change_to.shift(1).isin(["Tl"]) &
+                                       (all_pos_data.delta1_below <= self.kmer_length)) |
+                                      (all_pos_data.change_to.shift(-1).isin(["Tl"]) &
+                                       (all_pos_data.delta1_above <= self.kmer_length)) |
+                                      (all_pos_data.change_to.shift(2).isin(["Tl"]) &
+                                       (all_pos_data.delta2_below <= self.kmer_length)) |
+                                      (all_pos_data.change_to.shift(-2).isin(["Tl"]) &
+                                       (all_pos_data.delta2_above <= self.kmer_length)) |
+                                      (all_pos_data.change_to.shift(3).isin(["Tl"]) &
+                                       (all_pos_data.delta3_below <= self.kmer_length)) |
+                                      (all_pos_data.change_to.shift(-3).isin(["Tl"]) &
+                                       (all_pos_data.delta3_above <= self.kmer_length)) |
+                                      (all_pos_data.change_to.shift(4).isin(["Tl"]) &
+                                       (all_pos_data.delta4_below <= self.kmer_length)) |
+                                      (all_pos_data.change_to.shift(-4).isin(["Tl"]) &
+                                       (all_pos_data.delta4_above <= self.kmer_length))
+                                      ) & (~all_pos_data.change_to.isin(["Tl"])))
+
+        all_pos_data["pseudo_in_other"] = (((~all_pos_data.change_to.shift(1).isin(["Tl"]) &
+                                             (all_pos_data.delta1_below <= self.kmer_length)) |
+                                            (~all_pos_data.change_to.shift(-1).isin(["Tl"]) &
+                                             (all_pos_data.delta1_above <= self.kmer_length)) |
+                                            (~all_pos_data.change_to.shift(2).isin(["Tl"]) &
+                                             (all_pos_data.delta2_below <= self.kmer_length)) |
+                                            (~all_pos_data.change_to.shift(-2).isin(["Tl"]) &
+                                             (all_pos_data.delta2_above <= self.kmer_length)) |
+                                            (~all_pos_data.change_to.shift(3).isin(["Tl"]) &
+                                             (all_pos_data.delta3_below <= self.kmer_length)) |
+                                            (~all_pos_data.change_to.shift(-3).isin(["Tl"]) &
+                                             (all_pos_data.delta3_above <= self.kmer_length)) |
+                                            (~all_pos_data.change_to.shift(4).isin(["Tl"]) &
+                                             (all_pos_data.delta4_below <= self.kmer_length)) |
+                                            (~all_pos_data.change_to.shift(-4).isin(["Tl"]) &
+                                             (all_pos_data.delta4_above <= self.kmer_length))
+                                            ) & (all_pos_data.change_to.isin(["Tl"])))
+
+        all_pos_data["2prime_in_other"] = (((~all_pos_data.change_to.shift(1).isin(["Aa", "Cb", "Gc", "Td", "Tdm"]) &
+                                             (all_pos_data.delta1_below <= self.kmer_length)) |
+                                            (~all_pos_data.change_to.shift(-1).isin(["Aa", "Cb", "Gc", "Td", "Tdm"]) &
+                                             (all_pos_data.delta1_above <= self.kmer_length)) |
+                                            (~all_pos_data.change_to.shift(2).isin(["Aa", "Cb", "Gc", "Td", "Tdm"]) &
+                                             (all_pos_data.delta2_below <= self.kmer_length)) |
+                                            (~all_pos_data.change_to.shift(-2).isin(["Aa", "Cb", "Gc", "Td", "Tdm"]) &
+                                             (all_pos_data.delta2_above <= self.kmer_length)) |
+                                            (~all_pos_data.change_to.shift(3).isin(["Aa", "Cb", "Gc", "Td", "Tdm"]) &
+                                             (all_pos_data.delta3_below <= self.kmer_length)) |
+                                            (~all_pos_data.change_to.shift(-3).isin(["Aa", "Cb", "Gc", "Td", "Tdm"]) &
+                                             (all_pos_data.delta3_above <= self.kmer_length)) |
+                                            (~all_pos_data.change_to.shift(4).isin(["Aa", "Cb", "Gc", "Td", "Tdm"]) &
+                                             (all_pos_data.delta4_below <= self.kmer_length)) |
+                                            (~all_pos_data.change_to.shift(-4).isin(["Aa", "Cb", "Gc", "Td", "Tdm"]) &
+                                             (all_pos_data.delta4_above <= self.kmer_length))
+                                            ) & (all_pos_data.change_to.isin(["Aa", "Cb", "Gc", "Td", "Tdm"])))
+
         all_pos_data["in_unknown"] = (all_pos_data["in_pseudo"] | all_pos_data["in_2prime"])
         return all_pos_data
 
@@ -191,11 +275,11 @@ class KmerPosMapping(object):
 
     def _update_kmer_pos_maps(self, contig, strand, all_pos, all_variant_bases):
         kmers = get_covered_kmers(self.ref_handler, contig, strand, all_pos, all_variant_bases,
-                                  self.rna, self.kmer_length)
+                                  self.rna, self.kmer_length, canonical_replacement=self.canonical_replacement)
         for i, p in enumerate(range(min(all_pos) - (self.kmer_length - 1), max(all_pos) + 1)):
             csp = self.contig_strand_position(contig=contig, strand=strand, position=p)
             self.pos_2_kmers[csp] = self.pos_2_kmers[csp] | kmers[i]
-            for k in kmers[i]:
+            for k in self.pos_2_kmers[csp]:
                 self.kmer_2_pos[k].append(csp)
 
         for i, p in enumerate(all_pos):
