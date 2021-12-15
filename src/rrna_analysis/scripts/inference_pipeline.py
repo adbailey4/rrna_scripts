@@ -45,6 +45,9 @@ def parse_args():
     parser.add_argument('--name', action='store',
                         dest='name', required=True, type=str,
                         help="Name of experiment")
+    parser.add_argument('--embed', action='store_true',
+                        dest='embed', required=False,
+                        help="Run MEA during signalAlign and embed into fast5s")
 
     args = parser.parse_args()
     return args
@@ -129,7 +132,7 @@ run_config = {"signal_alignment_args": {
 }
 
 
-def create_config(outpath, bam, name, path_to_bin, readdb, fast5_dir, threads=1):
+def create_config(outpath, bam, name, path_to_bin, readdb, fast5_dir, embed=False, threads=1):
     head_node = "https://bailey-k8s.s3-us-west-2.amazonaws.com/yeast_models"
     template_hmm_model = "yeast_rrna_depletion_trained_040721.model"
     ambig_model = "small_variants.model"
@@ -146,6 +149,8 @@ def create_config(outpath, bam, name, path_to_bin, readdb, fast5_dir, threads=1)
     run_config["samples"][0]["alignment_file"] = bam
     run_config["samples"][0]["readdb"] = readdb
     run_config["samples"][0]["fast5_dirs"] = [fast5_dir]
+
+    run_config["signal_alignment_args"]["embed"] = embed
 
     run_config["ambig_model"] = os.path.join(outpath, ambig_model)
     run_config["template_hmm_model"] = os.path.join(outpath, template_hmm_model)
@@ -209,7 +214,7 @@ def main():
 
     print("Running SignalAlign")
     run_config_dict = create_config(outpath, filtered_sorted_bam, name, args.path_to_bin, readdb_path,
-                                    split_fast5s_path,
+                                    split_fast5s_path, args.embed,
                                     threads=args.threads)
     config_path = os.path.join(outpath, "sa_run_config.json")
     save_json(run_config_dict, config_path)

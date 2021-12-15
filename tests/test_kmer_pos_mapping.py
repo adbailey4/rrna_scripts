@@ -33,7 +33,8 @@ class TestKmerPosMapping(unittest.TestCase):
                                  ['contig', 'position', 'strand', 'change_from', 'change_to', 'mod',
                                   'pos', 'percent', 'reference_index', 'delta1_below', 'delta1_above', 'delta2_below',
                                   'delta2_above', 'delta3_below', 'delta3_above', 'delta4_below', 'delta4_above',
-                                  'delta', 'in_2prime', 'in_pseudo', 'in_unknown'])
+                                  'delta', 'in_2prime', 'in_pseudo', 'pseudo_in_other',
+                                  '2prime_in_other', 'in_unknown'])
 
     def test_get_kmers_from_seq(self):
         kmers = get_kmers_from_seq("ATGCA", kmer_length=5)
