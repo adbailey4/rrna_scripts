@@ -11,7 +11,7 @@
 import os
 from argparse import ArgumentParser
 from subprocess import check_call, Popen, check_output, PIPE
-import urllib.request
+import importlib.resources as resources
 from pathlib import Path
 import shutil
 
@@ -133,15 +133,15 @@ run_config = {"signal_alignment_args": {
 
 
 def create_config(outpath, bam, name, path_to_bin, readdb, fast5_dir, embed=False, threads=1):
-    head_node = "https://bailey-k8s.s3-us-west-2.amazonaws.com/yeast_models"
-    template_hmm_model = "yeast_rrna_depletion_trained_040721.model"
+    template_hmm_model = "yeast_rrna_ivt_wt_trained_071521.model"
     ambig_model = "small_variants.model"
     variants = "yeast_18S_25S_variants.positions"
     reference = "yeast_25S_18S.fa"
     ref_index = "yeast_25S_18S.fa.fai"
     for x in [template_hmm_model, ambig_model, variants, reference, ref_index]:
-        urllib.request.urlretrieve(os.path.join(head_node, x), os.path.join(outpath, x))
-        assert os.path.exists(os.path.join(outpath, x)), f"{os.path.join(outpath, x)} doesnt exist"
+        with resources.path("rrna_analysis.data", x) as p:
+            shutil.copy(p, os.path.join(outpath, x))
+            assert os.path.exists(os.path.join(outpath, x)), f"{os.path.join(outpath, x)} doesnt exist"
 
     run_config["samples"][0]["positions_file"] = os.path.join(outpath, variants)
     run_config["samples"][0]["bwa_reference"] = os.path.join(outpath, reference)

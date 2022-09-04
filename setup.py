@@ -23,5 +23,6 @@ setup(name="rrna_scripts",
                         "matplotlib>=2.0.2",
                         "signalAlign>=0.3.0",
                         "py3helpers[seq_tools]>=0.5.0",
-                        'embed>=0.0.5']
+                        'embed>=0.0.5'],
+      package_data={'': ['data/*']},
       )
