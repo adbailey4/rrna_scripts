@@ -3,7 +3,7 @@ from setuptools import setup, find_packages  # , Extension
 
 
 setup(name="rrna_scripts",
-      version="0.0.1",
+      version="2.0.0",
       description="Scripts and helper functions for data analysis of yeast rrna signalAlign sequencing data",
       author="Andrew Bailey",
       author_email="andbaile@ucsc.edu",
