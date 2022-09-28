@@ -167,7 +167,7 @@ def split_fast5s(fast5_dir, output_dir, threads=1):
                f"-i {fast5_dir} -s {temp_dir} -c gzip".split())
     check_call(f"multi_to_single_fast5 --t {threads} "
                f"--input_path {temp_dir} --save_path {output_dir}".split())
-    os.removedirs(temp_dir)
+    shutil.rmtree(temp_dir)
 
 
 def index_reads(directory, fastq):
