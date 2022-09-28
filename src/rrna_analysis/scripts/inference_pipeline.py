@@ -162,8 +162,12 @@ def create_config(outpath, bam, name, path_to_bin, readdb, fast5_dir, embed=Fals
 
 
 def split_fast5s(fast5_dir, output_dir, threads=1):
+    temp_dir = os.path.join(output_dir, "tmp")
+    check_call(f"compress_fast5 -t {threads} "
+               f"-i {fast5_dir} -s {temp_dir} -c gzip".split())
     check_call(f"multi_to_single_fast5 --t {threads} "
-               f"--input_path {fast5_dir} --save_path {output_dir}".split())
+               f"--input_path {temp_dir} --save_path {output_dir}".split())
+    shutil.rmtree(temp_dir)
 
 
 def index_reads(directory, fastq):
