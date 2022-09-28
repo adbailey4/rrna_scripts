@@ -48,6 +48,9 @@ def parse_args():
     parser.add_argument('--embed', action='store_true',
                         dest='embed', required=False,
                         help="Run MEA during signalAlign and embed into fast5s")
+    parser.add_argument('--debug', action='store_true',
+                        dest='debug', required=False,
+                        help="Run signalalign in debug mode")
 
     args = parser.parse_args()
     return args
@@ -132,7 +135,7 @@ run_config = {"signal_alignment_args": {
 }
 
 
-def create_config(outpath, bam, name, path_to_bin, readdb, fast5_dir, embed=False, threads=1):
+def create_config(outpath, bam, name, path_to_bin, readdb, fast5_dir, embed=False, threads=1, debug=False):
     template_hmm_model = "yeast_rrna_ivt_wt_trained_071521.model"
     ambig_model = "small_variants.model"
     variants = "yeast_18S_25S_variants.positions"
@@ -157,6 +160,7 @@ def create_config(outpath, bam, name, path_to_bin, readdb, fast5_dir, embed=Fals
     run_config["output_dir"] = outpath
     run_config["job_count"] = threads
     run_config["path_to_bin"] = path_to_bin
+    run_config["debug"] = debug
 
     return run_config
 
@@ -215,7 +219,7 @@ def main():
     print("Running SignalAlign")
     run_config_dict = create_config(outpath, filtered_sorted_bam, name, args.path_to_bin, readdb_path,
                                     split_fast5s_path, args.embed,
-                                    threads=args.threads)
+                                    threads=args.threads, debug=args.debug)
     config_path = os.path.join(outpath, "sa_run_config.json")
     save_json(run_config_dict, config_path)
 
